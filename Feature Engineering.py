@@ -33,29 +33,6 @@ from sqlalchemy_utils import database_exists, create_database
 import psycopg2
 import pandas as pd
 
-dbname = 'stackoverflow'
-username = 'jojo'
-pswd = 'iAmPass'
-
-con = None
-con = psycopg2.connect(database=dbname,
-                       user=username,
-                       host='localhost',
-                       password=pswd)
-
-starting_date = '2016-03-05'
-print("Consider data after {}".format(starting_date))
-
-sql_query = """
-SELECT id, acceptedanswerid, creationdate, body, tags, title FROM posts
-where (posttypeid = 1) and creationdate > '{starting_date}'
-limit 4000
-;
-""".format(starting_date=starting_date)
-questions = pd.read_sql_query(sql_query, con)
-
-df = questions[['id', 'body', 'tags', 'title']]
-
 
 class ItemSelector(BaseEstimator, TransformerMixin):
     """For data grouped by feature, select subset of data at a provided key.
@@ -164,14 +141,43 @@ pipeline = Pipeline([
     ('nb', GaussianNB()),
 ])
 
-df['FailedQuestion'] = np.random.randint(2, size=df.shape[0])
-df = df[['title', 'tags', 'body', 'FailedQuestion']]
 
-train = df.sample(2000)
-train.index = range(train.shape[0])
-test = df.sample(2000)
-test.index = range(test.shape[0])
+def main():
+    dbname = 'stackoverflow'
+    username = 'jojo'
+    pswd = 'iAmPass'
 
-pipeline.fit(train[['title', 'body', 'tags']], train['FailedQuestion'])
-y = pipeline.predict(test[['title', 'body', 'tags']])
-print(classification_report(y, test['FailedQuestion']))
+    con = None
+    con = psycopg2.connect(database=dbname,
+                           user=username,
+                           host='localhost',
+                           password=pswd)
+
+    starting_date = '2016-03-05'
+    print("Consider data after {}".format(starting_date))
+
+    sql_query = """
+    SELECT id, acceptedanswerid, creationdate, body, tags, title FROM posts
+    where (posttypeid = 1) and creationdate > '{starting_date}'
+    limit 4000
+    ;
+    """.format(starting_date=starting_date)
+    questions = pd.read_sql_query(sql_query, con)
+
+    df = questions[['id', 'body', 'tags', 'title']]
+
+    df['FailedQuestion'] = np.random.randint(2, size=df.shape[0])
+    df = df[['title', 'tags', 'body', 'FailedQuestion']]
+
+    train = df.sample(2000)
+    train.index = range(train.shape[0])
+    test = df.sample(2000)
+    test.index = range(test.shape[0])
+
+    pipeline.fit(train[['title', 'body', 'tags']], train['FailedQuestion'])
+    y = pipeline.predict(test[['title', 'body', 'tags']])
+    print(classification_report(y, test['FailedQuestion']))
+
+
+if __name__ == '__main__':
+    main()
