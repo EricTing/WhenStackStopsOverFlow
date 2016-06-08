@@ -111,7 +111,7 @@ class DenseTransformer(TransformerMixin):
         return self
 
 
-pipeline = Pipeline([
+feature_union = [
     # Extract title, paragraphs in the body, tags
     ("titleparagraphstags", TitleParagrahsTagsExtractor()),
 
@@ -136,10 +136,7 @@ pipeline = Pipeline([
                       'paragraphs': 0.8,
                       'tags': 0.1,
                   }, )),
-    ('to_dense', DenseTransformer()),
-    # Use a naive bayes on the combined features
-    ('nb', GaussianNB()),
-])
+]
 
 
 def main():
@@ -165,6 +162,12 @@ def main():
     questions = pd.read_sql_query(sql_query, con)
 
     df = questions[['id', 'body', 'tags', 'title']]
+
+    pipeline = Pipeline(feature_union + [
+        ('to_dense', DenseTransformer()),
+        # Use a naive bayes on the combined features
+        ('nb', GaussianNB()),
+    ])
 
     df['FailedQuestion'] = np.random.randint(2, size=df.shape[0])
     df = df[['title', 'tags', 'body', 'FailedQuestion']]
