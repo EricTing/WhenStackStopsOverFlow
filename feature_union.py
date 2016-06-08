@@ -83,7 +83,8 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
                                dtype=[('title', object), (
                                    'paragraphs', object), ('tags', object)])
 
-        for idx, row in df.iterrows():
+        idx = 0
+        for _, row in df.iterrows():
             title = row['title']
             tags = re.sub(r"<|>", " ", row['tags'])
 
@@ -95,6 +96,8 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
             features['title'][idx] = title
             features['paragraphs'][idx] = paragraphs
             features['tags'][idx] = tags
+
+            idx += 1
 
         return features
 
@@ -173,9 +176,7 @@ def main():
     df = df[['title', 'tags', 'body', 'FailedQuestion']]
 
     train = df.sample(2000)
-    train.index = range(train.shape[0])
     test = df.sample(2000)
-    test.index = range(test.shape[0])
 
     pipeline.fit(train[['title', 'body', 'tags']], train['FailedQuestion'])
     y = pipeline.predict(test[['title', 'body', 'tags']])
