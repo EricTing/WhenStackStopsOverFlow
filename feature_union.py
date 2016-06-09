@@ -111,7 +111,7 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
                 features['id'][idx] = myid
                 features['acceptedanswerid'][idx] = acceptedanswerid
                 features['creationdate'][idx] = creationdate
-                features['posttypeid'] = row['posttypeid']
+                features['posttypeid'][idx] = row['posttypeid']
 
                 idx += 1
             except Exception, e:
