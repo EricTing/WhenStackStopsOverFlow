@@ -2,9 +2,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import combinations
-import string
-
 import logging
 log_fn = "./so.log"
 logging.basicConfig(filename=log_fn, level=logging.INFO)
@@ -12,7 +9,6 @@ logging.basicConfig(filename=log_fn, level=logging.INFO)
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy as sp
 import seaborn as sns
 
 sns.set()
@@ -22,9 +18,7 @@ sns.set_context("poster", font_scale=1.3)
 
 import re
 from bs4 import BeautifulSoup
-from sklearn.naive_bayes import GaussianNB
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import classification_report
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
 
@@ -32,10 +26,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
 
-from sqlalchemy import create_engine
-from sqlalchemy_utils import database_exists, create_database
 import psycopg2
-import pandas as pd
 
 
 class ItemSelector(BaseEstimator, TransformerMixin):
