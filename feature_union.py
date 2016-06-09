@@ -22,7 +22,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report
 from nltk import word_tokenize
-from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk.stem import WordNetLemmatizer
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import FeatureUnion
@@ -114,6 +114,15 @@ class DenseTransformer(TransformerMixin):
         return self
 
 
+def wordnet(text):
+    tokens = word_tokenize(text)
+
+    my_stemmer = WordNetLemmatizer()
+    tokens = [my_stemmer.lemmatize(t) for t in tokens]
+
+    return tokens
+
+
 feature_union = [
     # Extract title, paragraphs in the body, tags
     ("titleparagraphstags", TitleParagrahsTagsExtractor()),
@@ -123,21 +132,27 @@ feature_union = [
      FeatureUnion(transformer_list=[
          ('title', Pipeline([
              ('selector', ItemSelector(key='title')),
-             ('tfidf', TfidfVectorizer(min_df=100)),
+             ('tfidf', TfidfVectorizer(min_df=100,
+                                       tokenizer=wordnet,
+                                       stop_words='english')),
          ])), ('paragraphs', Pipeline([
              ('selector', ItemSelector(key='paragraphs')),
-             ('tfidf', TfidfVectorizer(min_df=100))
+             ('tfidf', TfidfVectorizer(min_df=100,
+                                       tokenizer=wordnet,
+                                       stop_words='english'))
          ])), ('tags', Pipeline([
              ('selector', ItemSelector(key='tags')),
-             ('tfidf', TfidfVectorizer(min_df=100))
+             ('tfidf', TfidfVectorizer(min_df=100,
+                                       tokenizer=wordnet,
+                                       stop_words='english'))
          ]))
      ],
 
                   # weight components in FeatureUnion
                   transformer_weights={
-                      'title': 0.1,
-                      'paragraphs': 0.8,
-                      'tags': 0.1,
+                      'title': 0.33,
+                      'paragraphs': 0.33,
+                      'tags': 0.33,
                   }, )),
 ]
 
