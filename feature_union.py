@@ -85,17 +85,19 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
             try:
                 title = row['title']
 
-                tags = ""
+                tags = None
                 if row['tags'] is not None:
-                    re.sub(r"<|>", " ", row['tags'])
+                    tags = re.sub(r"<|>", " ", row['tags'])
 
                 body = row['body']
                 soup = BeautifulSoup(body, 'lxml')
                 paragraphs = soup.find_all('p')
                 paragraphs = '\n'.join([_.getText() for _ in paragraphs])
 
-                codes = soup.find_all('c')
-                codes = '\n'.join([_.getText() for _ in codes])
+                codes = None
+                mycodes = soup.find_all('code')
+                if len(mycodes) > 0:
+                    codes = '\n'.join([_.getText() for _ in mycodes])
 
                 myid = row['id']
                 acceptedanswerid = row['acceptedanswerid']
@@ -192,7 +194,9 @@ def main(starting_date):
              'creationdate']]
     extractor = TitleParagrahsTagsExtractor()
     extracted = extractor.transform(df)
-    np.save("extracted.{}".format(starting_date), extracted)
+
+    df = pd.DataFrame.from_records(extracted)
+    df.to_pickle("extracted.{}.pkl".format(starting_date))
 
 
 if __name__ == '__main__':
