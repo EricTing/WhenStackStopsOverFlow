@@ -80,8 +80,9 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
 
     def transform(self, df):
         features = np.recarray(shape=(len(df), ),
-                               dtype=[('title', object), (
-                                   'paragraphs', object), ('tags', object)])
+                               dtype=[('title', object), ('paragraphs',
+                                                          object),
+                                      ('tags', object), ('codes', object)])
 
         idx = 0
         for _, row in df.iterrows():
@@ -93,9 +94,13 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
             paragraphs = soup.find_all('p')
             paragraphs = '\n'.join([_.getText() for _ in paragraphs])
 
+            codes = soup.find_all('c')
+            codes = '\n'.join([_.getText() for _ in codes])
+
             features['title'][idx] = title
             features['paragraphs'][idx] = paragraphs
             features['tags'][idx] = tags
+            features['codes'][idx] = codes
 
             idx += 1
 
@@ -124,9 +129,6 @@ def wordnet(text):
 
 
 feature_union = [
-    # Extract title, paragraphs in the body, tags
-    ("titleparagraphstags", TitleParagrahsTagsExtractor()),
-
     # Use FeatureUnion to combine the features from title, paragraphs and tags
     ('union',
      FeatureUnion(transformer_list=[
@@ -181,11 +183,12 @@ def main():
 
     df = questions[['id', 'body', 'tags', 'title']]
 
-    pipeline = Pipeline(feature_union + [
-        ('to_dense', DenseTransformer()),
-        # Use a naive bayes on the combined features
-        ('nb', GaussianNB()),
-    ])
+    pipeline = Pipeline([('extractor', TitleParagrahsTagsExtractor())] +
+                        feature_union + [
+                            ('to_dense', DenseTransformer()),
+                            # Use a naive bayes on the combined features
+                            ('nb', GaussianNB()),
+                        ])
 
     df['FailedQuestion'] = np.random.randint(2, size=df.shape[0])
     df = df[['title', 'tags', 'body', 'FailedQuestion']]
