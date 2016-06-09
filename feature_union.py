@@ -77,8 +77,9 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
         features = np.recarray(
             shape=(len(df), ),
             dtype=[('title', object), ('paragraphs', object), ('id', object),
-                   ('acceptedanswerid', object), ('creationdate', object),
-                   ('tags', object), ('codes', object)])
+                   ('posttypeid', object), ('acceptedanswerid', object),
+                   ('creationdate', object), ('tags', object),
+                   ('codes', object)])
 
         idx = 0
         for _, row in df.iterrows():
@@ -110,6 +111,7 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
                 features['id'][idx] = myid
                 features['acceptedanswerid'][idx] = acceptedanswerid
                 features['creationdate'][idx] = creationdate
+                features['posttypeid'] = row['posttypeid']
 
                 idx += 1
             except Exception, e:
@@ -184,13 +186,13 @@ def main(starting_date):
     print("Consider data after {}".format(starting_date))
 
     sql_query = """
-    SELECT id, acceptedanswerid, creationdate, body, tags, title FROM posts
+    SELECT id, acceptedanswerid, creationdate, body, tags, title, posttypeid FROM posts
     where (posttypeid = 1 or posttypeid = 2) and creationdate > '{starting_date}'
     ;
     """.format(starting_date=starting_date)
     qa = pd.read_sql_query(sql_query, con)
 
-    df = qa[['id', 'body', 'tags', 'title', 'acceptedanswerid',
+    df = qa[['id', 'body', 'tags', 'title', 'acceptedanswerid', 'posttypeid',
              'creationdate']]
     extractor = TitleParagrahsTagsExtractor()
     extracted = extractor.transform(df)
