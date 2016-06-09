@@ -5,6 +5,10 @@ from __future__ import absolute_import, division, print_function
 from itertools import combinations
 import string
 
+import logging
+log_fn = "./so.log"
+logging.basicConfig(filename=log_fn, level=logging.INFO)
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -79,30 +83,44 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, df):
-        features = np.recarray(shape=(len(df), ),
-                               dtype=[('title', object), ('paragraphs',
-                                                          object),
-                                      ('tags', object), ('codes', object)])
+        features = np.recarray(
+            shape=(len(df), ),
+            dtype=[('title', object), ('paragraphs', object), ('id', object),
+                   ('acceptedanswerid', object), ('creationdate', object),
+                   ('tags', object), ('codes', object)])
 
         idx = 0
         for _, row in df.iterrows():
-            title = row['title']
-            tags = re.sub(r"<|>", " ", row['tags'])
+            try:
+                title = row['title']
 
-            body = row['body']
-            soup = BeautifulSoup(body, 'lxml')
-            paragraphs = soup.find_all('p')
-            paragraphs = '\n'.join([_.getText() for _ in paragraphs])
+                tags = ""
+                if row['tags'] is not None:
+                    re.sub(r"<|>", " ", row['tags'])
 
-            codes = soup.find_all('c')
-            codes = '\n'.join([_.getText() for _ in codes])
+                body = row['body']
+                soup = BeautifulSoup(body, 'lxml')
+                paragraphs = soup.find_all('p')
+                paragraphs = '\n'.join([_.getText() for _ in paragraphs])
 
-            features['title'][idx] = title
-            features['paragraphs'][idx] = paragraphs
-            features['tags'][idx] = tags
-            features['codes'][idx] = codes
+                codes = soup.find_all('c')
+                codes = '\n'.join([_.getText() for _ in codes])
 
-            idx += 1
+                myid = row['id']
+                acceptedanswerid = row['acceptedanswerid']
+                creationdate = row['creationdate']
+
+                features['title'][idx] = title
+                features['paragraphs'][idx] = paragraphs
+                features['tags'][idx] = tags
+                features['codes'][idx] = codes
+                features['id'][idx] = myid
+                features['acceptedanswerid'][idx] = acceptedanswerid
+                features['creationdate'][idx] = creationdate
+
+                idx += 1
+            except Exception, e:
+                logging.warning(e)
 
         return features
 
@@ -159,7 +177,7 @@ feature_union = [
 ]
 
 
-def main():
+def main(starting_date):
     dbname = 'stackoverflow'
     username = 'jojo'
     pswd = 'iAmPass'
@@ -170,36 +188,23 @@ def main():
                            host='localhost',
                            password=pswd)
 
-    starting_date = '2016-03-05'
     print("Consider data after {}".format(starting_date))
 
     sql_query = """
     SELECT id, acceptedanswerid, creationdate, body, tags, title FROM posts
-    where (posttypeid = 1) and creationdate > '{starting_date}'
-    limit 4000
+    where (posttypeid = 1 or posttypeid = 2) and creationdate > '{starting_date}'
     ;
     """.format(starting_date=starting_date)
-    questions = pd.read_sql_query(sql_query, con)
+    qa = pd.read_sql_query(sql_query, con)
 
-    df = questions[['id', 'body', 'tags', 'title']]
-
-    pipeline = Pipeline([('extractor', TitleParagrahsTagsExtractor())] +
-                        feature_union + [
-                            ('to_dense', DenseTransformer()),
-                            # Use a naive bayes on the combined features
-                            ('nb', GaussianNB()),
-                        ])
-
-    df['FailedQuestion'] = np.random.randint(2, size=df.shape[0])
-    df = df[['title', 'tags', 'body', 'FailedQuestion']]
-
-    train = df.sample(2000)
-    test = df.sample(2000)
-
-    pipeline.fit(train[['title', 'body', 'tags']], train['FailedQuestion'])
-    y = pipeline.predict(test[['title', 'body', 'tags']])
-    print(classification_report(y, test['FailedQuestion']))
+    df = qa[['id', 'body', 'tags', 'title', 'acceptedanswerid',
+             'creationdate']]
+    extractor = TitleParagrahsTagsExtractor()
+    extracted = extractor.transform(df)
+    np.save("extracted.{}".format(starting_date), extracted)
 
 
 if __name__ == '__main__':
-    main()
+    import sys
+    starting_date = sys.argv[1]
+    main(starting_date)
