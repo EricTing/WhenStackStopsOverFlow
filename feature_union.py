@@ -79,6 +79,7 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
             dtype=[('title', object), ('paragraphs', object), ('id', object),
                    ('posttypeid', object), ('acceptedanswerid', object),
                    ('creationdate', object), ('tags', object),
+                   ('parentid', object),
                    ('codes', object)])
 
         idx = 0
@@ -112,6 +113,7 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
                 features['acceptedanswerid'][idx] = acceptedanswerid
                 features['creationdate'][idx] = creationdate
                 features['posttypeid'][idx] = row['posttypeid']
+                features['parentid'][idx] = row['parentid']
 
                 idx += 1
             except Exception, e:
@@ -186,7 +188,7 @@ def main(starting_date):
     print("Consider data after {}".format(starting_date))
 
     sql_query = """
-    SELECT id, acceptedanswerid, creationdate, body, tags, title, posttypeid FROM posts
+    SELECT id, acceptedanswerid, parentid, creationdate, body, tags, title, posttypeid FROM posts
     where (posttypeid = 1 or posttypeid = 2) and creationdate > '{starting_date}'
     ;
     """.format(starting_date=starting_date)
