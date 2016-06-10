@@ -22,6 +22,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
 
+import scipy
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
@@ -79,8 +80,7 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
             dtype=[('title', object), ('paragraphs', object), ('id', object),
                    ('posttypeid', object), ('acceptedanswerid', object),
                    ('creationdate', object), ('tags', object),
-                   ('parentid', object),
-                   ('codes', object)])
+                   ('parentid', object), ('codes', object)])
 
         idx = 0
         for _, row in df.iterrows():
@@ -143,25 +143,41 @@ def wordnet(text):
     return tokens
 
 
+class SparseTransformer(TransformerMixin):
+
+        def transform(self, X, y=None, **fit_params):
+            return scipy.sparse.csr_matrix(X).T
+
+        def fit_transform(self, X, y=None, **fit_params):
+            self.fit(X, y, **fit_params)
+            return self.transform(X)
+
+        def fit(self, X, y=None, **fit_params):
+            return self
+
+
 feature_union = [
     # Use FeatureUnion to combine the features from title, paragraphs and tags
     ('union',
      FeatureUnion(transformer_list=[
          ('title', Pipeline([
              ('selector', ItemSelector(key='title')),
-             ('tfidf', TfidfVectorizer(min_df=100,
+             ('tfidf', TfidfVectorizer(min_df=1,
+                                       max_df=0.9,
                                        tokenizer=wordnet,
                                        stop_words='english')),
          ])), ('paragraphs', Pipeline([
              ('selector', ItemSelector(key='paragraphs')),
-             ('tfidf', TfidfVectorizer(min_df=100,
+             ('tfidf', TfidfVectorizer(min_df=1,
+                                       max_df=0.9,
                                        tokenizer=wordnet,
                                        stop_words='english'))
          ])), ('tags', Pipeline([
              ('selector', ItemSelector(key='tags')),
-             ('tfidf', TfidfVectorizer(min_df=100,
-                                       tokenizer=wordnet,
-                                       stop_words='english'))
+             ('tfidf', TfidfVectorizer(min_df=1, max_df=0.9))
+         ])), ('codes', Pipeline([
+             ('selector', ItemSelector(key='hasCodes')),
+             ('to_sparse', SparseTransformer())
          ]))
      ],
 
