@@ -194,10 +194,8 @@ def main(starting_date):
     """.format(starting_date=starting_date)
     qa = pd.read_sql_query(sql_query, con)
 
-    df = qa[['id', 'body', 'tags', 'title', 'acceptedanswerid', 'posttypeid',
-             'creationdate']]
     extractor = TitleParagrahsTagsExtractor()
-    extracted = extractor.transform(df)
+    extracted = extractor.transform(qa)
 
     df = pd.DataFrame.from_records(extracted)
     df.to_pickle("extracted.{}.pkl".format(starting_date))
