@@ -20,6 +20,7 @@ from sklearn.metrics import classification_report
 from build_model import readData, feature_cols
 from feature_union import unionFeature
 
+
 def main(starting_date="2016-03-01"):
     cls_train, cls_test = readData(starting_date=starting_date)
 
@@ -31,7 +32,8 @@ def main(starting_date="2016-03-01"):
                                  tags_max_df=0.7)
 
     pipeline = Pipeline(feature_union + [('cls', RandomForestClassifier(
-        class_weight='balanced', n_estimators=50, n_jobs=3)), ])
+        class_weight='balanced',
+        n_estimators=50, n_jobs=16)), ])
 
     pipeline.fit(cls_train[feature_cols], cls_train['success'])
     y = pipeline.predict(cls_test[feature_cols])
@@ -40,9 +42,8 @@ def main(starting_date="2016-03-01"):
     joblib.dump(pipeline, "./randomforest.{}.pkl".format(starting_date))
 
     scores = pipeline.predict_proba(cls_test[feature_cols])[:, 1]
-    fpr, tpr, thresholds = metrics.roc_curve(cls_test['success'],
-                                             scores,
-                                             pos_label=1)
+    fpr, tpr, thresholds = metrics.roc_curve(
+        cls_test['success'], scores, pos_label=1)
 
     plt.figure()
     plt.plot(fpr, tpr)
@@ -51,8 +52,8 @@ def main(starting_date="2016-03-01"):
     plt.savefig("./randomforest_roc.png")
     plt.title("ROC of randomforest classifier")
     print("Area under curve for randomforest is {}".format(metrics.auc(fpr,
-                                                                     tpr)))
+                                                                       tpr)))
 
 
 if __name__ == '__main__':
-    main(starting_date="2016-01-01")
+    main(starting_date="2016-03-01")

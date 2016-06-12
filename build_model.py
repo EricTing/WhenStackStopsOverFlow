@@ -14,8 +14,9 @@ def readData(starting_date="2016-03-01"):
     Keyword Arguments:
     starting_date -- (default "2016-03-01")
     """
-    qa = pd.read_pickle("./extracted.{}.pkl".format(starting_date))
+    qa = pd.read_json("./extracted.{}.json".format(starting_date))
     qa.shape
+    qa['creationdate'] = qa['creationdate'].astype('datetime64[ns]')
 
     qa.posttypeid.value_counts()
 

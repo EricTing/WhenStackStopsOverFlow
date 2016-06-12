@@ -55,4 +55,4 @@ def main(starting_date="2016-03-01"):
 
 
 if __name__ == '__main__':
-    main(starting_date="2016-01-01")
+    main(starting_date="2016-03-01")
