@@ -144,50 +144,68 @@ def wordnet(text):
 
 
 class SparseTransformer(TransformerMixin):
+    def transform(self, X, y=None, **fit_params):
+        return scipy.sparse.csr_matrix(X).T
 
-        def transform(self, X, y=None, **fit_params):
-            return scipy.sparse.csr_matrix(X).T
+    def fit_transform(self, X, y=None, **fit_params):
+        self.fit(X, y, **fit_params)
+        return self.transform(X)
 
-        def fit_transform(self, X, y=None, **fit_params):
-            self.fit(X, y, **fit_params)
-            return self.transform(X)
-
-        def fit(self, X, y=None, **fit_params):
-            return self
+    def fit(self, X, y=None, **fit_params):
+        return self
 
 
-feature_union = [
-    # Use FeatureUnion to combine the features from title, paragraphs and tags
-    ('union',
-     FeatureUnion(transformer_list=[
-         ('title', Pipeline([
-             ('selector', ItemSelector(key='title')),
-             ('tfidf', TfidfVectorizer(min_df=1,
-                                       max_df=0.9,
-                                       tokenizer=wordnet,
-                                       stop_words='english')),
-         ])), ('paragraphs', Pipeline([
-             ('selector', ItemSelector(key='paragraphs')),
-             ('tfidf', TfidfVectorizer(min_df=1,
-                                       max_df=0.9,
-                                       tokenizer=wordnet,
-                                       stop_words='english'))
-         ])), ('tags', Pipeline([
-             ('selector', ItemSelector(key='tags')),
-             ('tfidf', TfidfVectorizer(min_df=1, max_df=0.9))
-         ])), ('codes', Pipeline([
-             ('selector', ItemSelector(key='hasCodes')),
-             ('to_sparse', SparseTransformer())
-         ]))
-     ],
+def unionFeature(title_min_df=1,
+                 title_max_df=0.9,
+                 paragraphs_min_df=1,
+                 paragraphs_max_df=0.9,
+                 tags_min_df=1,
+                 tags_max_df=0.9):
+    """
+    Keyword Arguments:
+    title_min_df                        -- (default 1)
+    title_max_df                        -- (default 0.9)
+    
+    paragraphs_min_df -- (default 1)
+    paragraphs_max_df                   -- (default 0.9)
+    
+    tags_min_df       -- (default 1)
+    tags_max_df                         -- (default 0.9)
+    """
+    feature_union = [
+        # Use FeatureUnion to combine the features from title, paragraphs and tags
+        ('union',
+         FeatureUnion(transformer_list=[
+             ('title', Pipeline([
+                 ('selector', ItemSelector(key='title')),
+                 ('tfidf', TfidfVectorizer(min_df=title_min_df,
+                                           max_df=title_max_df,
+                                           tokenizer=wordnet,
+                                           stop_words='english')),
+             ])), ('paragraphs', Pipeline([
+                 ('selector', ItemSelector(key='paragraphs')),
+                 ('tfidf', TfidfVectorizer(min_df=paragraphs_min_df,
+                                           max_df=paragraphs_max_df,
+                                           tokenizer=wordnet,
+                                           stop_words='english'))
+             ])), ('tags', Pipeline([
+                 ('selector', ItemSelector(key='tags')),
+                 ('tfidf', TfidfVectorizer(min_df=tags_min_df,
+                                           max_df=tags_max_df))
+             ])), ('codes', Pipeline([
+                 ('selector', ItemSelector(key='hasCodes')),
+                 ('to_sparse', SparseTransformer())
+             ]))
+         ],
 
-                  # weight components in FeatureUnion
-                  transformer_weights={
-                      'title': 0.33,
-                      'paragraphs': 0.33,
-                      'tags': 0.33,
-                  }, )),
-]
+                      # weight components in FeatureUnion
+                      transformer_weights={
+                          'title': 0.33,
+                          'paragraphs': 0.33,
+                          'tags': 0.33,
+                      }, )),
+    ]
+    return feature_union
 
 
 def main(starting_date):
