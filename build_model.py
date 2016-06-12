@@ -155,3 +155,11 @@ print(mean_absolute_error(y, y_test))
 joblib.dump(pipeline, "./linear_regression.{}.pkl".format(starting_date))
 
 """
+if __name__ == '__main__':
+    starting_date = "2016-03-01"
+    qa = pd.read_pickle("./extracted.{}.pkl".format(starting_date))
+    qa.to_json("./extracted.{}.json".format(starting_date), date_format='iso')
+
+    starting_date = "2015-11-01"
+    qa = pd.read_pickle("./extracted.{}.pkl".format(starting_date))
+    qa.to_json("./extracted.{}.json".format(starting_date), date_format='iso')
