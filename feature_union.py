@@ -165,10 +165,10 @@ def unionFeature(title_min_df=1,
     Keyword Arguments:
     title_min_df                        -- (default 1)
     title_max_df                        -- (default 0.9)
-    
+
     paragraphs_min_df -- (default 1)
     paragraphs_max_df                   -- (default 0.9)
-    
+
     tags_min_df       -- (default 1)
     tags_max_df                         -- (default 0.9)
     """
