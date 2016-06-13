@@ -155,23 +155,7 @@ class SparseTransformer(TransformerMixin):
         return self
 
 
-def unionFeature(title_min_df=1,
-                 title_max_df=0.9,
-                 paragraphs_min_df=1,
-                 paragraphs_max_df=0.9,
-                 tags_min_df=1,
-                 tags_max_df=0.9):
-    """
-    Keyword Arguments:
-    title_min_df                        -- (default 1)
-    title_max_df                        -- (default 0.9)
-
-    paragraphs_min_df -- (default 1)
-    paragraphs_max_df                   -- (default 0.9)
-
-    tags_min_df       -- (default 1)
-    tags_max_df                         -- (default 0.9)
-    """
+def unionFeature():
     feature_union = [
         # Use FeatureUnion to combine the features from title, paragraphs and tags
         ('union',
@@ -180,20 +164,14 @@ def unionFeature(title_min_df=1,
                  ('selector', ItemSelector(key='title')),
                  ('tfidf', TfidfVectorizer(tokenizer=wordnet,
                                            stop_words='english')),
-             ])),
-             ('paragraphs', Pipeline([
+             ])), ('paragraphs', Pipeline([
                  ('selector', ItemSelector(key='paragraphs')), (
                      'tfidf', TfidfVectorizer(tokenizer=wordnet,
                                               stop_words='english'))
-             ])),
-             ('tags', Pipeline([
-                 ('selector', ItemSelector(key='tags')), ('tfidf',
-                                                          TfidfVectorizer())
+             ])), ('tags', Pipeline([
+                 ('selector', ItemSelector(key='tags')), (
+                     'tfidf', TfidfVectorizer(token_pattern=r'(?u)\b\S+\b'))
              ]))
-             # , ('codes', Pipeline([
-             #     ('selector', ItemSelector(key='hasCodes')),
-             #     ('to_sparse', SparseTransformer())
-             # ]))
          ],
 
                       # weight components in FeatureUnion
