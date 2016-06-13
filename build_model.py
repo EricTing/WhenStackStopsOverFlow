@@ -9,6 +9,7 @@ import pandas as pd
 
 feature_cols = ['title', 'paragraphs', 'tags', 'hasCodes']
 
+
 def readData(starting_date="2016-03-01"):
     """
     Keyword Arguments:
@@ -56,8 +57,8 @@ def readData(starting_date="2016-03-01"):
     questions_answered_late_ids = shortest_elapsed_time[shortest_elapsed_time >
                                                         10080].index
 
-    failed_questions_ids = np.concatenate(
-        (questions_unanswered_ids.values, questions_answered_late_ids))
+    failed_questions_ids = np.concatenate((questions_unanswered_ids.values,
+                                           questions_answered_late_ids))
 
     failed_questions_ids.shape
 
@@ -66,16 +67,9 @@ def readData(starting_date="2016-03-01"):
 
     questions.head(1)
 
-
     cls_df = questions[feature_cols + ['success']]
 
-    cls_df.head()
-
-    cls_train = cls_df.sample(int(cls_df.shape[0] / 2))
-
-    cls_test = cls_df[~cls_df.index.isin(cls_train.index)]
-
-    return cls_train, cls_test
+    return cls_df
 
 
 """LogisticRegression
@@ -105,7 +99,6 @@ plt.title("ROC of logistic regression classifier")
 print("Area under curve for linear regression is {}".format(metrics.auc(fpr,
                                                                         tpr)))
 """
-
 """random forest
 pipeline = Pipeline(feature_union + [
     ('cls', RandomForestClassifier(n_jobs=4, class_weight='balanced')),
@@ -128,7 +121,6 @@ plt.savefig("./random_forest_roc.png")
 plt.title("ROC of random forest classifier")
 print("Area under curve is {}".format(metrics.auc(fpr, tpr)))
 """
-
 """ linear regression
 good_q_a = q_a[~q_a.acceptedanswerid_x.isnull()]
 

@@ -77,10 +77,10 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
     def transform(self, df):
         features = np.recarray(
             shape=(len(df), ),
-            dtype=[('title', object), ('paragraphs', object), ('id', object),
-                   ('posttypeid', object), ('acceptedanswerid', object),
-                   ('creationdate', object), ('tags', object),
-                   ('parentid', object), ('codes', object)])
+            dtype=[('title', object), ('paragraphs', object), ('id', object), (
+                'posttypeid', object), ('acceptedanswerid', object), (
+                    'creationdate', object), ('tags', object), (
+                        'parentid', object), ('codes', object)])
 
         idx = 0
         for _, row in df.iterrows():
@@ -178,24 +178,22 @@ def unionFeature(title_min_df=1,
          FeatureUnion(transformer_list=[
              ('title', Pipeline([
                  ('selector', ItemSelector(key='title')),
-                 ('tfidf', TfidfVectorizer(min_df=title_min_df,
-                                           max_df=title_max_df,
-                                           tokenizer=wordnet,
+                 ('tfidf', TfidfVectorizer(tokenizer=wordnet,
                                            stop_words='english')),
-             ])), ('paragraphs', Pipeline([
-                 ('selector', ItemSelector(key='paragraphs')),
-                 ('tfidf', TfidfVectorizer(min_df=paragraphs_min_df,
-                                           max_df=paragraphs_max_df,
-                                           tokenizer=wordnet,
-                                           stop_words='english'))
-             ])), ('tags', Pipeline([
-                 ('selector', ItemSelector(key='tags')),
-                 ('tfidf', TfidfVectorizer(min_df=tags_min_df,
-                                           max_df=tags_max_df))
-             ])), ('codes', Pipeline([
-                 ('selector', ItemSelector(key='hasCodes')),
-                 ('to_sparse', SparseTransformer())
+             ])),
+             ('paragraphs', Pipeline([
+                 ('selector', ItemSelector(key='paragraphs')), (
+                     'tfidf', TfidfVectorizer(tokenizer=wordnet,
+                                              stop_words='english'))
+             ])),
+             ('tags', Pipeline([
+                 ('selector', ItemSelector(key='tags')), ('tfidf',
+                                                          TfidfVectorizer())
              ]))
+             # , ('codes', Pipeline([
+             #     ('selector', ItemSelector(key='hasCodes')),
+             #     ('to_sparse', SparseTransformer())
+             # ]))
          ],
 
                       # weight components in FeatureUnion
