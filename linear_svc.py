@@ -43,17 +43,17 @@ def main(starting_date="2016-03-01"):
     pipeline = Pipeline(feature_union + [('cls', LinearSVC(class_weight=
                                                            'balanced')), ])
 
-    parameters = {"union__title__tfidf__max_df": [0.9, 0.8, 0.7, 0.6],
-                  "union__title__tfidf__min_df": [1, 10],
-                  "union__paragraphs__tfidf__max_df": [0.9, 0.8, 0.7, 0.6],
-                  "union__paragraphs__tfidf__min_df": [1, 10],
-                  "union__tags__tfidf__max_df": [0.9, 0.8, 0.7, 0.6],
-                  "union__tags__tfidf__min_df": [1, 10],
-                  "cls__C": [1.0, 5.0, 10.0]}
+    parameters = {"union__title__tfidf__max_df": [0.9, 0.8],
+                  "union__title__tfidf__min_df": [0.1, 0.2],
+                  "union__paragraphs__tfidf__max_df": [0.9, 0.8],
+                  "union__paragraphs__tfidf__min_df": [0.1, 0.2],
+                  "union__tags__tfidf__max_df": [0.9, 0.8],
+                  "union__tags__tfidf__min_df": [0.1, 0.2],
+                  "cls__C": [1.0, 5.0]}
 
     grid_search = GridSearchCV(
         pipeline, parameters,
-        n_jobs=3, scoring='roc_auc',
+        n_jobs=8, scoring='roc_auc',
         cv=3)
     grid_search.fit(cls_df[feature_cols], cls_df['success'])
 
@@ -92,4 +92,4 @@ def main(starting_date="2016-03-01"):
 
 
 if __name__ == '__main__':
-    main(starting_date="2015-11-01")
+    main(starting_date="2016-02-01")
