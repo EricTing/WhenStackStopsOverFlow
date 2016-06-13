@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""RandomForestClassifier
+"""RandomForestRegressor
 """
 
 import matplotlib
@@ -14,11 +14,12 @@ import numpy as np
 import pprint
 
 from operator import itemgetter
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.grid_search import GridSearchCV
 
-from build_model import readData, feature_cols
+from build_model import feature_cols
+from build_model import readTimeDf
 from feature_union import unionFeature
 
 
@@ -34,12 +35,12 @@ def report(grid_scores, n_top=3):
 
 
 def main(starting_date="2016-03-01"):
-    cls_df = readData(starting_date=starting_date)
+    cls_df = readTimeDf(starting_date=starting_date)
     print("data size: {}".format(cls_df.shape))
 
     feature_union = unionFeature()
-    pipeline = Pipeline(feature_union + [('cls', RandomForestClassifier(
-        n_estimators=50, class_weight='balanced')), ])
+    pipeline = Pipeline(feature_union + [('cls', RandomForestRegressor(
+        n_estimators=20)), ])
 
     parameters = {
         "union__title__tfidf__max_df": [0.8, 0.6, 0.4],
@@ -56,44 +57,18 @@ def main(starting_date="2016-03-01"):
 
     pprint.pprint(parameters)
 
-    grid_search = GridSearchCV(
-        pipeline, parameters,
-        n_jobs=8, scoring='roc_auc',
-        cv=3)
-    grid_search.fit(cls_df[feature_cols], cls_df['success'])
+    grid_search = GridSearchCV(pipeline,
+                               parameters,
+                               n_jobs=8,
+                               scoring='mean_absolute_error',
+                               cv=3)
+    grid_search.fit(cls_df[feature_cols], cls_df['ElapsedTime'])
 
     print("Best score: %0.3f" % grid_search.best_score_)
     print("Best parameters set:")
     best_parameters = grid_search.best_estimator_.get_params()
     for param_name in sorted(parameters.keys()):
         print("\t%s: %r" % (param_name, best_parameters[param_name]))
-
-    # feature_union = unionFeature(title_min_df=1,
-    #                              title_max_df=0.7,
-    #                              paragraphs_min_df=10,
-    #                              paragraphs_max_df=0.7,
-    #                              tags_min_df=1,
-    #                              tags_max_df=0.7)
-
-    # pipeline.fit(cls_df[feature_cols], cls_df['success'])
-    # y = pipeline.predict(cls_test[feature_cols])
-    # print(classification_report(y, cls_test['success']))
-
-    # joblib.dump(pipeline, "./linearsvc.{}.pkl".format(starting_date))
-
-    # scores = pipeline.decision_function(cls_test[feature_cols])
-    # fpr, tpr, thresholds = metrics.roc_curve(cls_test['success'],
-    #                                          scores,
-    #                                          pos_label=1)
-
-    # plt.figure()
-    # plt.plot(fpr, tpr)
-    # plt.xlabel("False positive rate")
-    # plt.ylabel("True positive rate")
-    # plt.savefig("./linearsvc_roc.png")
-    # plt.title("ROC of linear svc classifier")
-    # print("Area under curve for linear svc is {}".format(metrics.auc(fpr,
-    #                                                                  tpr)))
 
 
 if __name__ == '__main__':
