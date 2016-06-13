@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""RandomForestRegressor
+"""lnear SVC
 """
 
 import matplotlib
@@ -14,13 +14,12 @@ import numpy as np
 import pprint
 
 from operator import itemgetter
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.grid_search import GridSearchCV
 
-from build_model import feature_cols
-from build_model import readTimeDf
-from feature_union import unionFeature
+from build_model import readData, feature_cols
+from feature_union import unionTagsFeature
 
 
 # Utility function to report best scores
@@ -35,35 +34,28 @@ def report(grid_scores, n_top=3):
 
 
 def main(starting_date="2016-03-01"):
-    cls_df = readTimeDf(starting_date=starting_date)
+    cls_df = readData(starting_date=starting_date)
     print("data size: {}".format(cls_df.shape))
 
-    feature_union = unionFeature()
-    pipeline = Pipeline(feature_union + [('cls', RandomForestRegressor(
-        n_estimators=20)), ])
+    feature_union = unionTagsFeature()
+    pipeline = Pipeline(feature_union + [('cls', LinearSVC(class_weight=
+                                                           'balanced')), ])
 
     parameters = {
-        "union__title__tfidf__max_df": [0.8, 0.6, 0.4],
-        "union__title__tfidf__min_df": [1],
-        # "union__title__tfidf__max_features": [1000, 4000],
-        "union__paragraphs__tfidf__max_df": [0.8, 0.6, 0.4],
-        "union__paragraphs__tfidf__min_df": [1, 5, 10],
-        # "union__paragraphs__tfidf__max_features": [1000, 4000],
-        "union__tags__tfidf__max_df": [1.0, 0.8, 0.6, 0.4],
+        "union__tags__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
         "union__tags__tfidf__min_df": [1],
-        # "union__tags__tfidf__max_features": [4000, 7000, 10000, 20000],
-        "cls__max_depth": [10, 20, 30, 40, 50, 60]
+        "cls__C": [0.001, 0.01, 1.0, 10.0]
     }
 
     pprint.pprint(parameters)
 
     grid_search = GridSearchCV(pipeline,
                                parameters,
-                               n_jobs=8,
                                verbose=3,
-                               scoring='mean_absolute_error',
+                               n_jobs=8,
+                               scoring='roc_auc',
                                cv=3)
-    grid_search.fit(cls_df[feature_cols], cls_df['ElapsedTime'])
+    grid_search.fit(cls_df[feature_cols], cls_df['success'])
 
     print("Best score: %0.3f" % grid_search.best_score_)
     print("Best parameters set:")

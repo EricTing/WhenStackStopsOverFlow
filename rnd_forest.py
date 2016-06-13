@@ -46,7 +46,7 @@ def main(starting_date="2016-03-01"):
         "union__title__tfidf__min_df": [1],
         # "union__title__tfidf__max_features": [1000, 4000],
         "union__paragraphs__tfidf__max_df": [0.8, 0.6, 0.4],
-        "union__paragraphs__tfidf__min_df": [1],
+        "union__paragraphs__tfidf__min_df": [1, 5, 10],
         # "union__paragraphs__tfidf__max_features": [1000, 4000],
         "union__tags__tfidf__max_df": [1.0, 0.8, 0.6, 0.4],
         "union__tags__tfidf__min_df": [1],
@@ -56,10 +56,12 @@ def main(starting_date="2016-03-01"):
 
     pprint.pprint(parameters)
 
-    grid_search = GridSearchCV(
-        pipeline, parameters,
-        n_jobs=8, scoring='roc_auc',
-        cv=3)
+    grid_search = GridSearchCV(pipeline,
+                               parameters,
+                               n_jobs=8,
+                               scoring='roc_auc',
+                               verbose=3,
+                               cv=3)
     grid_search.fit(cls_df[feature_cols], cls_df['success'])
 
     print("Best score: %0.3f" % grid_search.best_score_)
@@ -67,33 +69,6 @@ def main(starting_date="2016-03-01"):
     best_parameters = grid_search.best_estimator_.get_params()
     for param_name in sorted(parameters.keys()):
         print("\t%s: %r" % (param_name, best_parameters[param_name]))
-
-    # feature_union = unionFeature(title_min_df=1,
-    #                              title_max_df=0.7,
-    #                              paragraphs_min_df=10,
-    #                              paragraphs_max_df=0.7,
-    #                              tags_min_df=1,
-    #                              tags_max_df=0.7)
-
-    # pipeline.fit(cls_df[feature_cols], cls_df['success'])
-    # y = pipeline.predict(cls_test[feature_cols])
-    # print(classification_report(y, cls_test['success']))
-
-    # joblib.dump(pipeline, "./linearsvc.{}.pkl".format(starting_date))
-
-    # scores = pipeline.decision_function(cls_test[feature_cols])
-    # fpr, tpr, thresholds = metrics.roc_curve(cls_test['success'],
-    #                                          scores,
-    #                                          pos_label=1)
-
-    # plt.figure()
-    # plt.plot(fpr, tpr)
-    # plt.xlabel("False positive rate")
-    # plt.ylabel("True positive rate")
-    # plt.savefig("./linearsvc_roc.png")
-    # plt.title("ROC of linear svc classifier")
-    # print("Area under curve for linear svc is {}".format(metrics.auc(fpr,
-    #                                                                  tpr)))
 
 
 if __name__ == '__main__':

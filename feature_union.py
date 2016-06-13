@@ -184,6 +184,24 @@ def unionFeature():
     return feature_union
 
 
+def unionTagsFeature():
+    feature_union = [  # only tags features
+        ('union',
+         FeatureUnion(transformer_list=[
+             ('tags', Pipeline([
+                 ('selector', ItemSelector(key='tags')), (
+                     'tfidf', TfidfVectorizer(token_pattern=r'(?u)\b\S+\b'))
+             ]))
+         ],
+
+                      # weight components in FeatureUnion
+                      transformer_weights={
+                          'tags': 1.0,
+                      }, )),
+    ]
+    return feature_union
+
+
 def main(starting_date):
     dbname = 'stackoverflow'
     username = 'jojo'
