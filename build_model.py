@@ -16,21 +16,13 @@ def readData(starting_date="2016-03-01"):
     starting_date -- (default "2016-03-01")
     """
     qa = pd.read_json("./extracted.{}.json".format(starting_date))
-    qa.shape
     qa['creationdate'] = qa['creationdate'].astype('datetime64[ns]')
 
-    qa.posttypeid.value_counts()
-
-    qa.head(1)
-
     questions_ids = qa[qa['posttypeid'] == 1]['id']
-    questions_ids.shape
 
     qa['hasCodes'] = qa.codes.apply(lambda c: 0 if c is None else 1)
 
     answers = qa[qa.posttypeid == 2]
-
-    answers.head(1)
 
     questions_answered_ids = questions_ids[questions_ids.isin(
         answers.parentid)]
@@ -47,8 +39,6 @@ def readData(starting_date="2016-03-01"):
     q_a['ElapsedTime'] = (
         q_a.creationdate_y - q_a.creationdate_x).astype('timedelta64[m]')
 
-    q_a.sample(200).plot(kind='scatter', x='hasCodes_x', y='ElapsedTime')
-
     shortest_elapsed_time = q_a.groupby('id_x').apply(
         lambda g: g['ElapsedTime'].min())
 
@@ -60,16 +50,50 @@ def readData(starting_date="2016-03-01"):
     failed_questions_ids = np.concatenate((questions_unanswered_ids.values,
                                            questions_answered_late_ids))
 
-    failed_questions_ids.shape
-
     questions['success'] = questions['id'].isin(failed_questions_ids).apply(
         lambda b: 0 if b else 1)
-
-    questions.head(1)
 
     cls_df = questions[feature_cols + ['success']]
 
     return cls_df
+
+
+def readTimeDf(starting_date="2016-02-01"):
+    """read the data for regression problem
+    Keyword Arguments:
+    starting_date -- (default "2016-02-01)
+    """
+    qa = pd.read_json("./extracted.{}.json".format(starting_date))
+    qa['creationdate'] = qa['creationdate'].astype('datetime64[ns]')
+
+    questions_ids = qa[qa['posttypeid'] == 1]['id']
+
+    qa['hasCodes'] = qa.codes.apply(lambda c: 0 if c is None else 1)
+
+    answers = qa[qa.posttypeid == 2]
+
+    questions_answered_ids = questions_ids[questions_ids.isin(
+        answers.parentid)]
+
+    questions_unanswered_ids = questions_ids[~questions_ids.isin(
+        answers.parentid)]
+
+    questions = qa[qa['id'].isin(questions_ids)]
+
+    answered_q = questions[questions['id'].isin(questions_answered_ids)]
+
+    q_a = pd.merge(answered_q, answers, left_on='id', right_on='parentid')
+
+    q_a['ElapsedTime'] = (
+        q_a.creationdate_y - q_a.creationdate_x).astype('timedelta64[m]')
+
+    good_q_a = q_a[~q_a.acceptedanswerid_x.isnull()]
+
+    X = good_q_a[['title_x', 'paragraphs_x', 'tags_x', 'hasCodes_x']]
+    X.columns = ['title', 'paragraphs', 'tags', 'hasCodes']
+    y = good_q_a.ElapsedTime
+
+    return X, y
 
 
 """LogisticRegression
@@ -121,33 +145,7 @@ plt.savefig("./random_forest_roc.png")
 plt.title("ROC of random forest classifier")
 print("Area under curve is {}".format(metrics.auc(fpr, tpr)))
 """
-""" linear regression
-good_q_a = q_a[~q_a.acceptedanswerid_x.isnull()]
 
-good_q_a.ElapsedTime.hist()
-
-good_q_a.head(1)
-
-X = good_q_a[['title_x', 'paragraphs_x', 'tags_x', 'hasCodes_x']]
-X.columns = ['title', 'paragraphs', 'tags', 'hasCodes']
-y = good_q_a.ElapsedTime
-
-X_train, X_test, y_train, y_test = train_test_split(X,
-                                                    y,
-                                                    test_size=0.33,
-                                                    random_state=42)
-
-pipeline = Pipeline(feature_union + [('reg', LinearRegression(n_jobs=6)), ])
-
-pipeline.fit(X_train, y_train)
-
-y = pipeline.predict(X_test)
-
-print(mean_absolute_error(y, y_test))
-
-joblib.dump(pipeline, "./linear_regression.{}.pkl".format(starting_date))
-
-"""
 if __name__ == '__main__':
     starting_date = "2016-03-01"
     qa = pd.read_pickle("./extracted.{}.pkl".format(starting_date))
