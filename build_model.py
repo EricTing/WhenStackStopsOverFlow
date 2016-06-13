@@ -42,10 +42,10 @@ def readData(starting_date="2016-03-01"):
     shortest_elapsed_time = q_a.groupby('id_x').apply(
         lambda g: g['ElapsedTime'].min())
 
-    print("One week = {} min".format(24 * 60 * 7))
+    print("One day = {} min".format(24 * 60))
 
     questions_answered_late_ids = shortest_elapsed_time[shortest_elapsed_time >
-                                                        10080].index
+                                                        24 * 60].index
 
     failed_questions_ids = np.concatenate((questions_unanswered_ids.values,
                                            questions_answered_late_ids))
@@ -89,11 +89,10 @@ def readTimeDf(starting_date="2016-02-01"):
 
     good_q_a = q_a[~q_a.acceptedanswerid_x.isnull()]
 
-    X = good_q_a[['title_x', 'paragraphs_x', 'tags_x', 'hasCodes_x']]
-    X.columns = ['title', 'paragraphs', 'tags', 'hasCodes']
-    y = good_q_a.ElapsedTime
+    df = good_q_a[['title_x', 'paragraphs_x', 'tags_x', 'hasCodes_x', 'ElapsedTime']]
+    df.columns = ['title', 'paragraphs', 'tags', 'hasCodes', 'ElapsedTime']
 
-    return X, y
+    return df
 
 
 """LogisticRegression

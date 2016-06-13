@@ -11,14 +11,11 @@ plt.rcParams['figure.figsize'] = (12, 8)
 sns.set_style("darkgrid")
 sns.set_context("poster", font_scale=1.3)
 import numpy as np
+import pprint
 
 from operator import itemgetter
-from time import time
 from sklearn.svm import LinearSVC
-from sklearn import metrics
 from sklearn.pipeline import Pipeline
-from sklearn.externals import joblib
-from sklearn.metrics import classification_report
 from sklearn.grid_search import GridSearchCV
 
 from build_model import readData, feature_cols
@@ -38,18 +35,24 @@ def report(grid_scores, n_top=3):
 
 def main(starting_date="2016-03-01"):
     cls_df = readData(starting_date=starting_date)
+    print("data size: {}".format(cls_df.shape))
 
     feature_union = unionFeature()
     pipeline = Pipeline(feature_union + [('cls', LinearSVC(class_weight=
                                                            'balanced')), ])
 
-    parameters = {"union__title__tfidf__max_df": [0.9, 0.8],
-                  "union__title__tfidf__min_df": [0.1, 0.2],
-                  "union__paragraphs__tfidf__max_df": [0.9, 0.8],
-                  "union__paragraphs__tfidf__min_df": [0.1, 0.2],
-                  "union__tags__tfidf__max_df": [0.9, 0.8],
-                  "union__tags__tfidf__min_df": [0.1, 0.2],
-                  "cls__C": [1.0, 5.0]}
+    parameters = {"union__title__tfidf__max_df": [0.8, 0.6, 0.4],
+                  "union__title__tfidf__min_df": [1],
+                  # "union__title__tfidf__max_features": [1000, 4000],
+                  "union__paragraphs__tfidf__max_df": [0.8, 0.6, 0.4],
+                  "union__paragraphs__tfidf__min_df": [1],
+                  # "union__paragraphs__tfidf__max_features": [1000, 4000],
+                  "union__tags__tfidf__max_df": [1.0, 0.8, 0.6, 0.4],
+                  "union__tags__tfidf__min_df": [1],
+                  # "union__tags__tfidf__max_features": [4000, 7000, 10000, 20000],
+                  "cls__C": [0.01, 1.0, 10.0, 20.0]}
+
+    pprint.pprint(parameters)
 
     grid_search = GridSearchCV(
         pipeline, parameters,
