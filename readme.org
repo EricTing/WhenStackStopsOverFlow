@@ -22,8 +22,33 @@ Best parameters set:
 CLOSED: [2016-06-14 Tue 02:47]
 1. 2016-02-01 data
    #+BEGIN_QUOTE
-   [CV]  cls__max_depth=10, union__paragraphs__tfidf__min_df=5, union__tags__tfidf__min_df=1, union__paragraphs__tfidf__max_df=0.8, union__tags__tfidf__max_df=0.6, union__title__tfidf__max_df=0.6, union__title__tfidf__min_df=1, score=0.674649 -10.0min
+   [CV]  cls__max_depth=10, union__paragraphs__tfidf__min_df=5, union__tags__tfidf__min_df=1, union__paragraphs__tfidf__max_df=0.8, 
+   union__tags__tfidf__max_df=0.6, union__title__tfidf__max_df=0.6, union__title__tfidf__min_df=1, score=0.674649 -10.0min
    #+END_QUOTE
 
-** Badges
-SCHEDULED: <2016-06-14 Tue>
+** DONE Badges
+CLOSED: [2016-06-14 Tue 13:25] SCHEDULED: <2016-06-14 Tue>
+*** LinearSVC
+#+BEGIN_QUOTE
+[CV] tfidf__Best score: 0.570
+Best parameters set:
+	cls__C: 10.0
+	tfidf__max_df: 1.0
+	tfidf__min_df: 1
+#+END_QUOTE
+*** RandomForestClassifier
+#+BEGIN_QUOTE
+Best score: 0.571
+Best parameters set:
+	cls__max_depth: 20
+	tfidf__max_df: 1.0
+	tfidf__min_df: 2
+#+END_QUOTE
+*** RandomForestRegressor
+#+BEGIN_QUOTE
+Best score: -966.675
+Best parameters set:
+	cls__max_depth: 20
+	tfidf__max_df: 0.8
+	tfidf__min_df: 1
+#+END_QUOTE
