@@ -5,6 +5,8 @@ import numpy as np
 import luigi
 from sklearn.grid_search import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.decomposition import TruncatedSVD
+from sklearn.preprocessing import Normalizer
 from sklearn.svm import LinearSVC
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
@@ -87,41 +89,44 @@ class BadgeSuccessModelCV(luigi.Task):
         return BadgeSuccessDf(starting_date=self.starting_date)
 
     def run(self):
+        # pipeline = Pipeline([
+        #     ('tfidf', TfidfVectorizer()), ('cls', LinearSVC())
+        # ])
+
+        # parameters = {
+        #     "tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
+        #     "tfidf__min_df": [1, 2, 3],
+        #     "cls__C": [0.001, 0.01, 1.0, 10.0],
+        # }
+
+        # grid_search = GridSearchCV(pipeline,
+        #                            parameters,
+        #                            verbose=3,
+        #                            n_jobs=8,
+        #                            scoring='roc_auc',
+        #                            cv=3)
+
+        # df = pd.read_json(self.requires().output().path)
+        # grid_search.fit(df['badges'], df['success'])
+
+        # print("Best score: %0.3f" % grid_search.best_score_)
+        # print("Best parameters set:")
+        # best_parameters = grid_search.best_estimator_.get_params()
+        # for param_name in sorted(parameters.keys()):
+        #     print("\t%s: %r" % (param_name, best_parameters[param_name]))
+
         pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer()), ('cls', LinearSVC())
+            ('tfidf', TfidfVectorizer()),
+            ('dim_red', TruncatedSVD()),
+            ('norm', Normalizer()),
+            ('cls', RandomForestClassifier(n_estimators=20)),
         ])
 
         parameters = {
-            "tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
-            "tfidf__min_df": [1, 2, 3],
-            "cls__C": [0.001, 0.01, 1.0, 10.0],
-        }
-
-        grid_search = GridSearchCV(pipeline,
-                                   parameters,
-                                   verbose=3,
-                                   n_jobs=8,
-                                   scoring='roc_auc',
-                                   cv=3)
-
-        df = pd.read_json(self.requires().output().path)
-        grid_search.fit(df['badges'], df['success'])
-
-        print("Best score: %0.3f" % grid_search.best_score_)
-        print("Best parameters set:")
-        best_parameters = grid_search.best_estimator_.get_params()
-        for param_name in sorted(parameters.keys()):
-            print("\t%s: %r" % (param_name, best_parameters[param_name]))
-
-        pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer()), ('cls', RandomForestClassifier(
-                n_estimators=20))
-        ])
-
-        parameters = {
-            "tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
-            "tfidf__min_df": [1, 2, 3],
-            "cls__max_depth": [10, 20, 30, 40, 50, 60],
+            "tfidf__max_df": [1.0],
+            "tfidf__min_df": [2],
+            "cls__max_depth": [20],
+            "dim_red__n_components": [512],
         }
 
         grid_search = GridSearchCV(pipeline,
@@ -193,9 +198,7 @@ def main():
             BadgeTimeDf(starting_date="2016-02-01"),
             BadgeTimeDf(starting_date="2015-11-01"),
             BadgeSuccessModelCV(starting_date="2016-02-01"),
-            BadgeSuccessModelCV(starting_date="2015-11-01"),
             BadgeTimeModelCV(starting_date="2016-02-01"),
-            BadgeTimeModelCV(starting_date="2015-11-01"),
         ],
         local_scheduler=True)
 
