@@ -5,12 +5,10 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import pandas as pd
 
-import pandas as pd
-
 feature_cols = ['title', 'paragraphs', 'tags', 'hasCodes']
 
 
-def readData(starting_date="2016-03-01"):
+def readResponseData(starting_date="2016-03-01"):
     """
     Keyword Arguments:
     starting_date -- (default "2016-03-01")
@@ -39,6 +37,17 @@ def readData(starting_date="2016-03-01"):
     q_a['ElapsedTime'] = (
         q_a.creationdate_y - q_a.creationdate_x).astype('timedelta64[m]')
 
+    return q_a, questions, questions_unanswered_ids
+
+
+def readData(starting_date="2016-03-01"):
+    """
+    Keyword Arguments:
+    starting_date -- (default "2016-03-01")
+    """
+    q_a, questions, questions_unanswered_ids = readResponseData(
+        starting_date=starting_date)
+
     shortest_elapsed_time = q_a.groupby('id_x').apply(
         lambda g: g['ElapsedTime'].min())
 
@@ -63,33 +72,12 @@ def readTimeDf(starting_date="2016-02-01"):
     Keyword Arguments:
     starting_date -- (default "2016-02-01)
     """
-    qa = pd.read_json("./extracted.{}.json".format(starting_date))
-    qa['creationdate'] = qa['creationdate'].astype('datetime64[ns]')
-
-    questions_ids = qa[qa['posttypeid'] == 1]['id']
-
-    qa['hasCodes'] = qa.codes.apply(lambda c: 0 if c is None else 1)
-
-    answers = qa[qa.posttypeid == 2]
-
-    questions_answered_ids = questions_ids[questions_ids.isin(
-        answers.parentid)]
-
-    questions_unanswered_ids = questions_ids[~questions_ids.isin(
-        answers.parentid)]
-
-    questions = qa[qa['id'].isin(questions_ids)]
-
-    answered_q = questions[questions['id'].isin(questions_answered_ids)]
-
-    q_a = pd.merge(answered_q, answers, left_on='id', right_on='parentid')
-
-    q_a['ElapsedTime'] = (
-        q_a.creationdate_y - q_a.creationdate_x).astype('timedelta64[m]')
+    q_a, _1, _2 = readResponseData(starting_date=starting_date)
 
     good_q_a = q_a[~q_a.acceptedanswerid_x.isnull()]
 
-    df = good_q_a[['title_x', 'paragraphs_x', 'tags_x', 'hasCodes_x', 'ElapsedTime']]
+    df = good_q_a[['title_x', 'paragraphs_x', 'tags_x', 'hasCodes_x',
+                   'ElapsedTime']]
     df.columns = ['title', 'paragraphs', 'tags', 'hasCodes', 'ElapsedTime']
 
     return df
