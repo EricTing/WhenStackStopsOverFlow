@@ -18,3 +18,12 @@ Best parameters set:
 #+END_QUOTE
 
 ** TODO Title, paragraphs and tags
+*** DONE GridSearchCV for RandomForestClassifier
+CLOSED: [2016-06-14 Tue 02:47]
+1. 2016-02-01 data
+   #+BEGIN_QUOTE
+   [CV]  cls__max_depth=10, union__paragraphs__tfidf__min_df=5, union__tags__tfidf__min_df=1, union__paragraphs__tfidf__max_df=0.8, union__tags__tfidf__max_df=0.6, union__title__tfidf__max_df=0.6, union__title__tfidf__min_df=1, score=0.674649 -10.0min
+   #+END_QUOTE
+
+** Badges
+SCHEDULED: <2016-06-14 Tue>
