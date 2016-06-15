@@ -120,7 +120,7 @@ class CombinedModel(luigi.Task):
 def main():
     luigi.build(
         [CombinedModel(starting_date='2016-02-01',
-                       n_jobs=8)],
+                       n_jobs=3)],
         local_scheduler=True)
 
 
