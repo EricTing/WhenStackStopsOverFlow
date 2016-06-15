@@ -1,22 +1,45 @@
 #!/usr/bin/env python
 
-import luigi
 import pprint
+import luigi
 import pandas as pd
-from build_model import readData
-from badge_model import BadgeTimeDf
-from sklearn.svm import LinearSVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import Normalizer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.grid_search import GridSearchCV
 from feature_union import ItemSelector, wordnet
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import FeatureUnion
+
 from build_model import feature_cols
+from build_model import readData
+from badge_model import BadgeTimeDf
+
+TITLE = ('title', Pipeline([
+    ('selector', ItemSelector(key='title')),
+    ('tfidf', TfidfVectorizer(tokenizer=wordnet,
+                              stop_words='english')),
+]))
+
+PARAGRAPHS = ('paragraphs', Pipeline([
+    ('selector', ItemSelector(key='paragraphs')), ('tfidf', TfidfVectorizer(
+        tokenizer=wordnet, stop_words='english'))
+]))
+
+TAGS = ('tags', Pipeline([
+    ('selector', ItemSelector(key='tags')), ('tfidf', TfidfVectorizer(
+        token_pattern=r'(?u)\b\S+\b'))
+]))
+
+BADGES = ('badges', Pipeline([
+    ('selector', ItemSelector(key='badges')), ('tfidf', TfidfVectorizer())
+]))
 
 
 class CombinedModel(luigi.Task):
     starting_date = luigi.Parameter()
+    n_jobs = luigi.Parameter(default=8)
 
     def requires(self):
         pass
@@ -30,31 +53,20 @@ class CombinedModel(luigi.Task):
         df = df.drop_duplicates('id')
         return df
 
-    def run(self):
-        df = self.readData()
-
+    def features(self):
         feature_union = [
             ('union', FeatureUnion(transformer_list=[
-                ('title', Pipeline([
-                    ('selector', ItemSelector(key='title')),
-                    ('tfidf', TfidfVectorizer(tokenizer=wordnet,
-                                              stop_words='english')),
-                ])), ('paragraphs', Pipeline([
-                    ('selector', ItemSelector(key='paragraphs')), (
-                        'tfidf', TfidfVectorizer(tokenizer=wordnet,
-                                                 stop_words='english'))
-                ])), ('tags', Pipeline([
-                    ('selector', ItemSelector(key='tags')), (
-                        'tfidf', TfidfVectorizer(token_pattern=r'(?u)\b\S+\b'))
-                ])), ('badges', Pipeline([
-                    ('selector', ItemSelector(key='badges')), (
-                        'tfidf', TfidfVectorizer())
-                ]))
+                TITLE,
+                PARAGRAPHS,
+                TAGS,
+                BADGES,
             ]))
         ]
 
         pipeline = Pipeline(feature_union + [
-            ('dim', TruncatedSVD()), ('cls', LinearSVC())
+            ('dim', TruncatedSVD()),
+            ('norm', Normalizer()),
+            ('cls', RandomForestClassifier(n_estimators=10)),
         ])
 
         parameters = {
@@ -64,25 +76,34 @@ class CombinedModel(luigi.Task):
             "union__paragraphs__tfidf__min_df": [10],
             "union__tags__tfidf__max_df": [0.6],
             "union__tags__tfidf__min_df": [1],
-            "dim__n_components": [100],
-            "cls__C": [0.01]
+            "dim__n_components": [20],
+            "cls__max_depth": [10]
         }
 
-        pprint.pprint(parameters)
+        return pipeline, parameters
 
-        grid_search = GridSearchCV(pipeline,
-                                   parameters,
-                                   verbose=3,
-                                   n_jobs=8,
-                                   scoring='roc_auc',
-                                   cv=3)
-        grid_search.fit(df[feature_cols + ['badges']], df['success'])
+    def run(self):
+        df = self.readData()
 
-        print("Best score: %0.3f" % grid_search.best_score_)
-        print("Best parameters set:")
-        best_parameters = grid_search.best_estimator_.get_params()
-        for param_name in sorted(parameters.keys()):
-            print("\t%s: %r" % (param_name, best_parameters[param_name]))
+        pipeline, parameters = self.features()
+
+        with open(self.output().path, 'w') as ofs:
+            pprint.pprint(parameters, ofs)
+
+            grid_search = GridSearchCV(pipeline,
+                                       parameters,
+                                       verbose=3,
+                                       n_jobs=self.n_jobs,
+                                       scoring='roc_auc',
+                                       cv=3)
+            grid_search.fit(df[feature_cols + ['badges']], df['success'])
+
+            ofs.write("Best score: %0.3f\n" % grid_search.best_score_)
+            ofs.write("Best parameters set:\n")
+            best_parameters = grid_search.best_estimator_.get_params()
+            for param_name in sorted(parameters.keys()):
+                ofs.write("\t%s: %r\n" %
+                          (param_name, best_parameters[param_name]))
 
     def output(self):
         ofn = "/work/jaydy/WhenStackStopsOverFlow/combined_model.{}.txt".format(
@@ -91,8 +112,10 @@ class CombinedModel(luigi.Task):
 
 
 def main():
-    luigi.build([CombinedModel(starting_date='2016-02-01')],
-                local_scheduler=True)
+    luigi.build(
+        [CombinedModel(starting_date='2016-02-01',
+                       n_jobs=8)],
+        local_scheduler=True)
 
 
 if __name__ == '__main__':
