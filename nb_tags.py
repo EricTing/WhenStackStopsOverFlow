@@ -57,7 +57,7 @@ class BadgesModel(CombinedModel):
         parameters = {
             "union__badges__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
             "union__badges__tfidf__min_df": [2, 4, 8],
-            "dim__n_components": [100, 200],
+            "dim__n_components": [20, 50, 100, 200],
         }
 
         return pipeline, parameters
