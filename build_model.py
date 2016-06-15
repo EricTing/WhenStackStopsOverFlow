@@ -62,7 +62,7 @@ def readData(starting_date="2016-03-01"):
     questions['success'] = questions['id'].isin(failed_questions_ids).apply(
         lambda b: 0 if b else 1)
 
-    cls_df = questions[feature_cols + ['success']]
+    cls_df = questions[feature_cols + ['id', 'success']]
 
     return cls_df
 
