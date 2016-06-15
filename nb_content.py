@@ -5,7 +5,7 @@ import luigi
 
 def main():
     luigi.build([
-        ContentModel(starting_date='2016-02-01', n_jobs=8)
+        ContentModel(starting_date='2016-02-01', n_jobs=2)
     ],
                 local_scheduler=True)
 
