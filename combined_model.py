@@ -23,8 +23,9 @@ TITLE = ('title', Pipeline([
 ]))
 
 PARAGRAPHS = ('paragraphs', Pipeline([
-    ('selector', ItemSelector(key='paragraphs')), ('tfidf', TfidfVectorizer(
-        tokenizer=wordnet, stop_words='english'))
+    ('selector', ItemSelector(key='paragraphs')), (
+        'tfidf', TfidfVectorizer(tokenizer=wordnet,
+                                 stop_words='english'))
 ]))
 
 TAGS = ('tags', Pipeline([
@@ -49,8 +50,13 @@ class CombinedModel(luigi.Task):
         content_df = readData(starting_date=starting_date)
         badge_df = pd.read_json(BadgeTimeDf(starting_date=
                                             starting_date).output().path)
-        df = pd.merge(content_df, badge_df, left_on='id', right_on='id')
+        df = pd.merge(content_df,
+                      badge_df,
+                      left_on='id',
+                      right_on='id',
+                      how='outer')
         df = df.drop_duplicates('id')
+        df['badges'] = df['badges'].fillna(value='')
         return df
 
     def features(self):
