@@ -77,8 +77,8 @@ def readTimeDf(starting_date="2016-02-01"):
     good_q_a = q_a[~q_a.acceptedanswerid_x.isnull()]
 
     df = good_q_a[['title_x', 'paragraphs_x', 'tags_x', 'hasCodes_x',
-                   'ElapsedTime']]
-    df.columns = ['title', 'paragraphs', 'tags', 'hasCodes', 'ElapsedTime']
+                   'ElapsedTime', 'id']]
+    df.columns = ['title', 'paragraphs', 'tags', 'hasCodes', 'ElapsedTime', 'id']
 
     return df
 
