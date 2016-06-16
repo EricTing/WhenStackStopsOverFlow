@@ -32,6 +32,9 @@ def readResponseData(starting_date="2016-03-01"):
 
     answered_q = questions[questions['id'].isin(questions_answered_ids)]
 
+    print("number of questions answered: {}".format(answered_q.shape[0]))
+    print("number of total questions: {}".format(questions.shape[0]))
+
     q_a = pd.merge(answered_q, answers, left_on='id', right_on='parentid')
 
     q_a['ElapsedTime'] = (

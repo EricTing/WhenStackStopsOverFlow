@@ -3,9 +3,7 @@
 import pprint
 import luigi
 import pandas as pd
-from sklearn.linear_model import LinearRegression
-from sklearn.naive_bayes import GaussianNB
-from sklearn.preprocessing import Normalizer
+from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.decomposition import TruncatedSVD
 from sklearn.grid_search import GridSearchCV
 from feature_union import ItemSelector, wordnet
@@ -71,20 +69,20 @@ class CombinedModel(luigi.Task):
 
         pipeline = Pipeline(feature_union + [
             ('dim', TruncatedSVD()),
-            ('norm', Normalizer()),
-            ('cls', GaussianNB()),
+            ('cls', LogisticRegression()),
         ])
 
         parameters = {
-            "union__title__tfidf__max_df": [0.4],
-            "union__title__tfidf__min_df": [4],
-            "union__paragraphs__tfidf__max_df": [1.0],
-            "union__paragraphs__tfidf__min_df": [8],
-            "union__tags__tfidf__max_df": [0.8],
-            "union__tags__tfidf__min_df": [4],
-            "union__badges__tfidf__max_df": [1.0],
-            "union__badges__tfidf__min_df": [8],
-            "dim__n_components": [50, 100, 400],
+            "union__title__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
+            "union__title__tfidf__min_df": [2, 4, 8],
+            "union__paragraphs__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
+            "union__paragraphs__tfidf__min_df": [2, 4, 8],
+            "union__tags__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
+            "union__tags__tfidf__min_df": [2, 4, 8],
+            "union__badges__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
+            "union__badges__tfidf__min_df": [2, 4, 8],
+            "cls__C": [0.1, 1, 10],
+            "dim__n_components": [100, 200, 300],
         }
 
         return pipeline, parameters
@@ -146,7 +144,6 @@ class CombinedModelTime(CombinedModel):
 
         pipeline = Pipeline(feature_union + [
             ('dim', TruncatedSVD()),
-            ('norm', Normalizer()),
             ('cls', LinearRegression()),
         ])
 
@@ -195,11 +192,9 @@ def main():
     luigi.build(
         [
             CombinedModel(starting_date='2016-02-01',
-                          n_jobs=3),
-            # CombinedModel(starting_date='2015-11-01',
-            #               n_jobs=3),
-            CombinedModelTime(starting_date='2016-02-01',
-                              n_jobs=3),
+                          n_jobs=2),
+            # CombinedModelTime(starting_date='2016-02-01',
+            #                   n_jobs=3),
         ],
         local_scheduler=True)
 
