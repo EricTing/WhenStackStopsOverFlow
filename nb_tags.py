@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import luigi
+import pickle
 import pprint
 from sklearn.externals import joblib
 from sklearn.grid_search import GridSearchCV
@@ -8,6 +9,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import TruncatedSVD
 from sklearn.pipeline import FeatureUnion
+from pymining import itemmining, assocrules, perftesting
 
 from combined_model import CombinedModel
 from combined_model import TITLE, PARAGRAPHS, TAGS, BADGES
@@ -86,7 +88,6 @@ class TagsProduct(CombinedModel):
             # "union__tags__tfidf__min_df": [1, 4, 8],
             # "cls__C": [0.1, 1, 10],
             # "dim__n_components": [100, 200, 300],
-
             "union__tags__tfidf__max_df": [0.6],
             "union__tags__tfidf__min_df": [1],
             "cls__C": [0.1],
@@ -125,10 +126,31 @@ class TagsProduct(CombinedModel):
         return luigi.LocalTarget(ofn)
 
 
+class TagsProfiles(TagsProduct):
+    def run(self):
+        df = self.readData()
+        transactions = df['tags'].apply(lambda s: s.split())
+        relim_input = itemmining.get_relim_input(transactions)
+        item_sets = itemmining.relim(relim_input, min_support=10)
+        rules = assocrules.mine_assoc_rules(item_sets,
+                                            min_support=10,
+                                            min_confidence=0.5)
+        dat = {t[0]: t[1:] for t in rules}
+        pickle.dump(dat, open(self.output().path, 'wb'))
+
+    def output(self):
+        ofn = "./tags.{}.profile.pkl".format(self.starting_date)
+        return luigi.LocalTarget(ofn)
+
+
 def main():
-    luigi.build([
-        TagsProduct(starting_date='2016-02-01', n_jobs=3),
-    ], local_scheduler=True)
+    luigi.build(
+        [
+            TagsProduct(starting_date='2016-02-01',
+                        n_jobs=3),
+            TagsProfiles(starting_date='2016-02-01'),
+        ],
+        local_scheduler=True)
 
 
 if __name__ == '__main__':
