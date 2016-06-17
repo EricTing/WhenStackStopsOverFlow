@@ -16,7 +16,7 @@ Best parameters set:
 	union__tags__tfidf__max_df: 0.4
 	union__tags__tfidf__min_df: 1
 #+END_QUOTE
-*** Naive Bayesian
+*** TODO Naive Bayesian
 #+BEGIN_QUOTE
 {'dim__n_components': [100, 200, 300],
  'union__tags__tfidf__max_df': [1.0, 0.8, 0.6, 0.4, 0.2],
@@ -28,14 +28,44 @@ Best parameters set:
 	union__tags__tfidf__min_df: 4
 #+END_QUOTE
 
-** TODO Title, paragraphs and tags
+** DONE Title, paragraphs and tags
+CLOSED: [2016-06-17 Fri 05:40]
 *** DONE GridSearchCV for RandomForestClassifier
 CLOSED: [2016-06-14 Tue 02:47]
 1. 2016-02-01 data
    #+BEGIN_QUOTE
-   [CV]  cls__max_depth=10, union__paragraphs__tfidf__min_df=5, union__tags__tfidf__min_df=1, union__paragraphs__tfidf__max_df=0.8, 
-   union__tags__tfidf__max_df=0.6, union__title__tfidf__max_df=0.6, union__title__tfidf__min_df=1, score=0.674649 -10.0min
+   [CV]  cls__max_depth=10, union__paragraphs__tfidf__min_df=5, 
+   union__tags__tfidf__min_df=1, 
+   union__paragraphs__tfidf__max_df=0.8, 
+   union__tags__tfidf__max_df=0.6, 
+   union__title__tfidf__max_df=0.6, 
+   union__title__tfidf__min_df=1, 
+   score=0.674649 -10.0min
    #+END_QUOTE
+
+*** DONE GridSearchCV for Naive Bayesian
+CLOSED: [2016-06-17 Fri 05:40]
+1. todo
+#+BEGIN_QUOTE
+[CV]  union__paragraphs__tfidf__max_df=1.0, union__title__tfidf__max_df=0.4, 
+union__title__tfidf__min_df=4, dim__n_components=100, union__paragraphs__tfidf__min_df=8, score=0.686461 - 3.0min
+#+END_QUOTE
+
+*** DONE GridSearchCV for Logistic Regression
+CLOSED: [2016-06-17 Fri 05:40]
+#+BEGIN_QUOTE
+'Best score: 0.681\n'
+'Best parameters set:\n'
+'\tcls__C: 1\n'
+'\tdim__n_components: 100\n'
+'\tunion__paragraphs__tfidf__max_df: 0.6\n'
+'\tunion__paragraphs__tfidf__min_df: 8\n'
+'\tunion__paragraphs__tfidf__ngram_range: (1, 1)\n'
+'\tunion__tags__tfidf__max_df: 0.6\n'
+'\tunion__tags__tfidf__min_df: 2\n'
+'\tunion__title__tfidf__max_df: 0.6\n'
+'\tunion__title__tfidf__min_df: 2\n'
+#+END_QUOTE
 
 ** DONE Badges
 CLOSED: [2016-06-14 Tue 13:25] SCHEDULED: <2016-06-14 Tue>
@@ -64,7 +94,7 @@ Best parameters set:
 	tfidf__min_df: 1
 #+END_QUOTE
 
-*** Naive Bayesian
+*** TODO Naive Bayesian
 #+BEGIN_QUOTE
 {'dim__n_components': [20, 50, 100, 200],
  'union__badges__tfidf__max_df': [1.0, 0.8, 0.6, 0.4, 0.2],
@@ -74,4 +104,29 @@ Best parameters set:
 	dim__n_components: 20
 	union__badges__tfidf__max_df: 1.0
 	union__badges__tfidf__min_df: 8
+#+END_QUOTE
+
+** DONE CombinedModel
+CLOSED: [2016-06-16 Thu 00:23]
+#+BEGIN_QUOTE
+{'dim__n_components': [50, 100, 400],
+ 'union__badges__tfidf__max_df': [1.0],
+ 'union__badges__tfidf__min_df': [8],
+ 'union__paragraphs__tfidf__max_df': [1.0],
+ 'union__paragraphs__tfidf__min_df': [8],
+ 'union__tags__tfidf__max_df': [0.8],
+ 'union__tags__tfidf__min_df': [4],
+ 'union__title__tfidf__max_df': [0.4],
+ 'union__title__tfidf__min_df': [4]}
+Best score: 0.620
+Best parameters set:
+	dim__n_components: 100
+	union__badges__tfidf__max_df: 1.0
+	union__badges__tfidf__min_df: 8
+	union__paragraphs__tfidf__max_df: 1.0
+	union__paragraphs__tfidf__min_df: 8
+	union__tags__tfidf__max_df: 0.8
+	union__tags__tfidf__min_df: 4
+	union__title__tfidf__max_df: 0.4
+	union__title__tfidf__min_df: 4
 #+END_QUOTE
