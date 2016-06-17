@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import luigi
-
+import pprint
+from sklearn.externals import joblib
+from sklearn.grid_search import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import TruncatedSVD
@@ -9,15 +11,12 @@ from sklearn.pipeline import FeatureUnion
 
 from combined_model import CombinedModel
 from combined_model import TITLE, PARAGRAPHS, TAGS, BADGES
+from build_model import feature_cols
 
 
 class BadgesModel(CombinedModel):
     def features(self):
-        feature_union = [
-            ('union', FeatureUnion(transformer_list=[
-                BADGES,
-            ]))
-        ]
+        feature_union = [('union', FeatureUnion(transformer_list=[BADGES, ]))]
 
         pipeline = Pipeline(feature_union + [
             ('dim', TruncatedSVD()),
@@ -72,8 +71,57 @@ class ContentModel(CombinedModel):
             self.starting_date)
         return luigi.LocalTarget(ofn)
 
+
+class TagsProduct(CombinedModel):
+    def features(self):
+        feature_union = [('union', FeatureUnion(transformer_list=[TAGS, ]))]
+
+        pipeline = Pipeline(feature_union + [
+            ('dim', TruncatedSVD()),
+            ('cls', LogisticRegression()),
+        ])
+
+        parameters = {
+            "union__tags__tfidf__max_df": [0.6, 0.4, 0.2],
+            "union__tags__tfidf__min_df": [1, 4, 8],
+            "cls__C": [0.1, 1, 10],
+            "dim__n_components": [100, 200, 300],
+        }
+
+        return pipeline, parameters
+
+    def run(self):
+        df = self.readData()
+        pipeline, parameters = self.features()
+        pprint.pprint(parameters)
+        grid_search = GridSearchCV(pipeline,
+                                   parameters,
+                                   verbose=3,
+                                   n_jobs=self.n_jobs,
+                                   scoring='roc_auc',
+                                   cv=3)
+        grid_search.fit(df[feature_cols + ['badges']], df['success'])
+        pprint.pprint("Best score: %0.3f\n" % grid_search.best_score_)
+        pprint.pprint("Best parameters set:\n")
+        best_parameters = grid_search.best_estimator_.get_params()
+        for param_name in sorted(parameters.keys()):
+            pprint.pprint("\t%s: %r\n" %
+                          (param_name, best_parameters[param_name]))
+
+        joblib.dump(grid_search.best_estimator_,
+                    self.output().path,
+                    compress=1)
+
+    def output(self):
+        ofn = "/work/jaydy/WhenStackStopsOverFlow/nb_tags.{}.product.pkl".format(
+            self.starting_date)
+        return luigi.LocalTarget(ofn)
+
+
 def main():
-    pass
+    luigi.build([
+        TagsProduct(starting_date='2016-02-01', n_jobs=3),
+    ], local_scheduler=True)
 
 
 if __name__ == '__main__':

@@ -3,7 +3,9 @@
 import pprint
 import luigi
 import pandas as pd
+import numpy as np
 from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.externals import joblib
 from sklearn.decomposition import TruncatedSVD
 from sklearn.grid_search import GridSearchCV
 from feature_union import ItemSelector, wordnet
@@ -63,7 +65,6 @@ class CombinedModel(luigi.Task):
                 TITLE,
                 PARAGRAPHS,
                 TAGS,
-                BADGES,
             ]))
         ]
 
@@ -73,16 +74,15 @@ class CombinedModel(luigi.Task):
         ])
 
         parameters = {
-            "union__title__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
-            "union__title__tfidf__min_df": [2, 4, 8],
-            "union__paragraphs__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
-            "union__paragraphs__tfidf__min_df": [2, 4, 8],
-            "union__tags__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
-            "union__tags__tfidf__min_df": [2, 4, 8],
-            "union__badges__tfidf__max_df": [1.0, 0.8, 0.6, 0.4, 0.2],
-            "union__badges__tfidf__min_df": [2, 4, 8],
+            "union__title__tfidf__max_df": [0.6],
+            "union__title__tfidf__min_df": [2],
+            "union__paragraphs__tfidf__max_df": [0.6],
+            "union__paragraphs__tfidf__min_df": [8],
+            "union__paragraphs__tfidf__ngram_range": [(1, 1), (1, 2), (1, 3)],
+            "union__tags__tfidf__max_df": [0.6],
+            "union__tags__tfidf__min_df": [2],
             "cls__C": [0.1, 1, 10],
-            "dim__n_components": [100, 200, 300],
+            "dim__n_components": [100],
         }
 
         return pipeline, parameters
@@ -92,26 +92,29 @@ class CombinedModel(luigi.Task):
 
         pipeline, parameters = self.features()
 
-        with open(self.output().path, 'w') as ofs:
-            pprint.pprint(parameters, ofs)
+        pprint.pprint(parameters)
 
-            grid_search = GridSearchCV(pipeline,
-                                       parameters,
-                                       verbose=3,
-                                       n_jobs=self.n_jobs,
-                                       scoring='roc_auc',
-                                       cv=3)
-            grid_search.fit(df[feature_cols + ['badges']], df['success'])
+        grid_search = GridSearchCV(pipeline,
+                                   parameters,
+                                   verbose=3,
+                                   n_jobs=self.n_jobs,
+                                   scoring='roc_auc',
+                                   cv=3)
+        grid_search.fit(df[feature_cols + ['badges']], df['success'])
 
-            ofs.write("Best score: %0.3f\n" % grid_search.best_score_)
-            ofs.write("Best parameters set:\n")
-            best_parameters = grid_search.best_estimator_.get_params()
-            for param_name in sorted(parameters.keys()):
-                ofs.write("\t%s: %r\n" %
+        pprint.pprint("Best score: %0.3f\n" % grid_search.best_score_)
+        pprint.pprint("Best parameters set:\n")
+        best_parameters = grid_search.best_estimator_.get_params()
+        for param_name in sorted(parameters.keys()):
+            pprint.pprint("\t%s: %r\n" %
                           (param_name, best_parameters[param_name]))
 
+        joblib.dump(grid_search.best_estimator_,
+                    self.output().path,
+                    compress=1)
+
     def output(self):
-        ofn = "/work/jaydy/WhenStackStopsOverFlow/combined_model.{}.txt".format(
+        ofn = "/work/jaydy/WhenStackStopsOverFlow/combined_model.{}.pkl".format(
             self.starting_date)
         return luigi.LocalTarget(ofn)
 
@@ -130,6 +133,7 @@ class CombinedModelTime(CombinedModel):
         df = df.drop_duplicates('id')
         df['badges'] = df['badges'].fillna(value='')
         df = df[~df['ElapsedTime'].isnull()]
+        df = df[df['ElapsedTime'] > 0]
         return df
 
     def features(self):
@@ -138,7 +142,6 @@ class CombinedModelTime(CombinedModel):
                 TITLE,
                 PARAGRAPHS,
                 TAGS,
-                BADGES,
             ]))
         ]
 
@@ -148,13 +151,14 @@ class CombinedModelTime(CombinedModel):
         ])
 
         parameters = {
-            "union__title__tfidf__max_df": [0.4],
-            "union__title__tfidf__min_df": [1],
-            "union__paragraphs__tfidf__max_df": [0.4],
-            "union__paragraphs__tfidf__min_df": [10],
+            "union__title__tfidf__max_df": [0.6],
+            "union__title__tfidf__min_df": [2],
+            "union__paragraphs__tfidf__max_df": [0.6],
+            "union__paragraphs__tfidf__min_df": [8],
+            "union__paragraphs__tfidf__ngram_range": [(1, 1), (1, 2), (1, 3)],
             "union__tags__tfidf__max_df": [0.6],
-            "union__tags__tfidf__min_df": [1],
-            "dim__n_components": [20],
+            "union__tags__tfidf__min_df": [2],
+            "dim__n_components": [100],
         }
 
         return pipeline, parameters
@@ -164,26 +168,28 @@ class CombinedModelTime(CombinedModel):
 
         pipeline, parameters = self.features()
 
-        with open(self.output().path, 'w') as ofs:
-            pprint.pprint(parameters, ofs)
+        pprint.pprint(parameters)
 
-            grid_search = GridSearchCV(pipeline,
-                                       parameters,
-                                       verbose=3,
-                                       n_jobs=self.n_jobs,
-                                       scoring='mean_absolute_error',
-                                       cv=3)
-            grid_search.fit(df[feature_cols + ['badges']], df['ElapsedTime'])
+        grid_search = GridSearchCV(pipeline,
+                                    parameters,
+                                    verbose=3,
+                                    n_jobs=self.n_jobs,
+                                    scoring='mean_absolute_error',
+                                    cv=3)
+        grid_search.fit(df[feature_cols + ['badges']], np.log(df['ElapsedTime']))
 
-            ofs.write("Best score: %0.3f\n" % grid_search.best_score_)
-            ofs.write("Best parameters set:\n")
-            best_parameters = grid_search.best_estimator_.get_params()
-            for param_name in sorted(parameters.keys()):
-                ofs.write("\t%s: %r\n" %
+        pprint.pprint("Best score: %0.3f\n" % grid_search.best_score_)
+        pprint.pprint("Best parameters set:\n")
+        best_parameters = grid_search.best_estimator_.get_params()
+        for param_name in sorted(parameters.keys()):
+            pprint.pprint("\t%s: %r\n" %
                           (param_name, best_parameters[param_name]))
 
+        joblib.dump(grid_search.best_estimator_,
+                    self.output().path,
+                    compress=1)
     def output(self):
-        ofn = "/work/jaydy/WhenStackStopsOverFlow/combined_model_time.{}.txt".format(
+        ofn = "/work/jaydy/WhenStackStopsOverFlow/combined_model_time.{}.pkl".format(
             self.starting_date)
         return luigi.LocalTarget(ofn)
 
@@ -192,9 +198,7 @@ def main():
     luigi.build(
         [
             CombinedModel(starting_date='2016-02-01',
-                          n_jobs=2),
-            # CombinedModelTime(starting_date='2016-02-01',
-            #                   n_jobs=3),
+                          n_jobs=3),
         ],
         local_scheduler=True)
 
