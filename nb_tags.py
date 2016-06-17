@@ -82,10 +82,17 @@ class TagsProduct(CombinedModel):
         ])
 
         parameters = {
-            "union__tags__tfidf__max_df": [0.6, 0.4, 0.2],
-            "union__tags__tfidf__min_df": [1, 4, 8],
-            "cls__C": [0.1, 1, 10],
-            "dim__n_components": [100, 200, 300],
+            # "union__tags__tfidf__max_df": [0.6, 0.4, 0.2],
+            # "union__tags__tfidf__min_df": [1, 4, 8],
+            # "cls__C": [0.1, 1, 10],
+            # "dim__n_components": [100, 200, 300],
+
+            "union__tags__tfidf__max_df": [0.6],
+            "union__tags__tfidf__min_df": [1],
+            "cls__C": [0.1],
+            "dim__n_components": [100],
+
+            # [CV]  union__tags__tfidf__max_df=0.6, dim__n_components=100, union__tags__tfidf__min_df=1, cls__C=0.1, score=0.663602 -  12.6s
         }
 
         return pipeline, parameters
