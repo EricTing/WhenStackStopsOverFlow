@@ -2,10 +2,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-import logging
-log_fn = "./so.log"
-logging.basicConfig(filename=log_fn, level=logging.INFO)
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -117,7 +113,7 @@ class TitleParagrahsTagsExtractor(BaseEstimator, TransformerMixin):
 
                 idx += 1
             except Exception, e:
-                logging.warning(e)
+                print(e)
 
         return features
 
