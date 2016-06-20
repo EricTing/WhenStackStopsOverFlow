@@ -257,7 +257,7 @@ def TimeModelEval():
         plt.xlabel("Predicted response time [Min]")
         plt.ylabel("Actual response time [Min]")
         plt.title(
-            "Predicted v.s. actual response time\nMean absolute error = {}".format(
+            "Predicted v.s. actual response time\nMean absolute error = {0:.2f}".format(
                 error))
         plt.xlim((0, max(y_predict)))
         plt.ylim((0, max(y_test)))
@@ -281,7 +281,7 @@ def TimeModelEval():
         plt.xlabel("Predicted response time [Min]")
         plt.ylabel("Actual response time [Min]")
         plt.title(
-            "Predicted v.s. actual response time\nMean absolute error = {}".format(
+            "Predicted v.s. actual response time\nMean absolute error = {0:.2f}".format(
                 error))
         plt.xlim((0, max(y_predict)))
         plt.ylim((0, max(y_test)))
@@ -305,7 +305,7 @@ def TimeModelEval():
         plt.xlabel("Predicted response time [Min]")
         plt.ylabel("Actual response time [Min]")
         plt.title(
-            "Predicted v.s. actual response time\nMean absolute error = {}".format(
+            "Predicted v.s. actual response time\nMean absolute error = {0:.2f}".format(
                 error))
         plt.xlim((0, max(y_predict)))
         plt.ylim((0, max(y_test)))
