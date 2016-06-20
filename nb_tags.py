@@ -131,12 +131,8 @@ class TagsProfiles(TagsProduct):
         df = self.readData()
         transactions = df['tags'].apply(lambda s: s.split())
         relim_input = itemmining.get_relim_input(transactions)
-        item_sets = itemmining.relim(relim_input, min_support=5)
-        rules = assocrules.mine_assoc_rules(item_sets,
-                                            min_support=5,
-                                            min_confidence=0.5)
-        dat = {t[0]: t[1:] for t in rules}
-        pickle.dump(dat, open(self.output().path, 'wb'))
+        item_sets = itemmining.relim(relim_input, min_support=15)
+        pickle.dump(item_sets, open(self.output().path, 'wb'))
 
     def output(self):
         ofn = "./tags.{}.profile.pkl".format(self.starting_date)
