@@ -1,10 +1,22 @@
 #!/usr/bin/env python
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+plt.rcParams['figure.figsize'] = (12, 8)
+sns.set_style("darkgrid")
+sns.set_context("poster", font_scale=1.3)
+
 import pprint
 import luigi
 import pandas as pd
 import numpy as np
+import sklearn.metrics as metrics
+from sklearn.cross_validation import train_test_split
 from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.externals import joblib
 from sklearn.decomposition import TruncatedSVD
 from sklearn.grid_search import GridSearchCV
@@ -155,7 +167,34 @@ class CombinedModelTime(CombinedModel):
             "union__title__tfidf__min_df": [2],
             "union__paragraphs__tfidf__max_df": [0.6],
             "union__paragraphs__tfidf__min_df": [8],
-            "union__paragraphs__tfidf__ngram_range": [(1, 1), (1, 2), (1, 3)],
+            "union__paragraphs__tfidf__ngram_range": [(1, 1)],
+            "union__tags__tfidf__max_df": [0.6],
+            "union__tags__tfidf__min_df": [2],
+            "dim__n_components": [100],
+        }
+
+        return pipeline, parameters
+
+    def nonlinarFeatures(self):
+        feature_union = [
+            ('union', FeatureUnion(transformer_list=[
+                TITLE,
+                PARAGRAPHS,
+                TAGS,
+            ]))
+        ]
+
+        pipeline = Pipeline(feature_union + [
+            ('dim', TruncatedSVD()),
+            ('cls', RandomForestRegressor(n_estimators=30)),
+        ])
+
+        parameters = {
+            "union__title__tfidf__max_df": [0.6],
+            "union__title__tfidf__min_df": [2],
+            "union__paragraphs__tfidf__max_df": [0.6],
+            "union__paragraphs__tfidf__min_df": [8],
+            "union__paragraphs__tfidf__ngram_range": [(1, 1)],
             "union__tags__tfidf__max_df": [0.6],
             "union__tags__tfidf__min_df": [2],
             "dim__n_components": [100],
@@ -171,12 +210,13 @@ class CombinedModelTime(CombinedModel):
         pprint.pprint(parameters)
 
         grid_search = GridSearchCV(pipeline,
-                                    parameters,
-                                    verbose=3,
-                                    n_jobs=self.n_jobs,
-                                    scoring='mean_absolute_error',
-                                    cv=3)
-        grid_search.fit(df[feature_cols + ['badges']], np.log(df['ElapsedTime']))
+                                   parameters,
+                                   verbose=3,
+                                   n_jobs=self.n_jobs,
+                                   scoring='mean_absolute_error',
+                                   cv=3)
+        grid_search.fit(df[feature_cols + ['badges']],
+                        np.log(df['ElapsedTime']))
 
         pprint.pprint("Best score: %0.3f\n" % grid_search.best_score_)
         pprint.pprint("Best parameters set:\n")
@@ -188,10 +228,92 @@ class CombinedModelTime(CombinedModel):
         joblib.dump(grid_search.best_estimator_,
                     self.output().path,
                     compress=1)
+
     def output(self):
         ofn = "/work/jaydy/WhenStackStopsOverFlow/combined_model_time.{}.pkl".format(
             self.starting_date)
         return luigi.LocalTarget(ofn)
+
+
+def TimeModelEval():
+    task = CombinedModelTime(starting_date='2016-02-01')
+    df = task.readData()
+
+    def linearFit2():
+        pipeline, parameters = task.features()
+
+        X = df[feature_cols + ['badges']]
+        y = df['ElapsedTime']
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.50)
+
+        pipeline.fit(X_train, y_train)
+        y_predict = pipeline.predict(X_test)
+
+        error = metrics.mean_absolute_error(y_predict, y_test)
+
+        plt.figure()
+        plt.scatter(y_predict, y_test, alpha=0.3)
+        plt.xlabel("Predicted response time [Min]")
+        plt.ylabel("Actual response time [Min]")
+        plt.title(
+            "Predicted v.s. actual response time\nMean absolute error = {}".format(
+                error))
+        plt.xlim((0, max(y_predict)))
+        plt.ylim((0, max(y_test)))
+        plt.savefig("./linear_reg_scatter.png")
+
+    def linearFit2Loga():
+        pipeline, parameters = task.features()
+
+        X = df[feature_cols + ['badges']]
+        y = df['ElapsedTime']
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.50)
+
+        pipeline.fit(X_train, np.log10(y_train))
+        y_predict = map(lambda x: 10**x, pipeline.predict(X_test))
+
+        error = metrics.mean_absolute_error(y_predict, y_test)
+
+        plt.figure()
+        plt.scatter(y_predict, y_test, alpha=0.3)
+        plt.xlabel("Predicted response time [Min]")
+        plt.ylabel("Actual response time [Min]")
+        plt.title(
+            "Predicted v.s. actual response time\nMean absolute error = {}".format(
+                error))
+        plt.xlim((0, max(y_predict)))
+        plt.ylim((0, max(y_test)))
+        plt.savefig("./linear_log_reg_scatter.png")
+
+    def randomForestFit():
+        pipeline, _ = task.nonlinarFeatures()
+
+        X = df[feature_cols + ['badges']]
+        y = df['ElapsedTime']
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.50)
+
+        pipeline.fit(X_train, y_train)
+        y_predict = pipeline.predict(X_test)
+
+        error = metrics.mean_absolute_error(y_predict, y_test)
+
+        plt.figure()
+        plt.scatter(y_predict, y_test, alpha=0.3)
+        plt.xlabel("Predicted response time [Min]")
+        plt.ylabel("Actual response time [Min]")
+        plt.title(
+            "Predicted v.s. actual response time\nMean absolute error = {}".format(
+                error))
+        plt.xlim((0, max(y_predict)))
+        plt.ylim((0, max(y_test)))
+        plt.savefig("./randomforest_reg_scatter.png")
+
+    linearFit2()
+    linearFit2Loga()
+    randomForestFit()
 
 
 def main():
@@ -201,6 +323,7 @@ def main():
                           n_jobs=3),
         ],
         local_scheduler=True)
+    TimeModelEval()
 
 
 if __name__ == '__main__':
