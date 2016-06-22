@@ -36,13 +36,14 @@ TITLE = ('title', Pipeline([
 ]))
 
 PARAGRAPHS = ('paragraphs', Pipeline([
-    ('selector', ItemSelector(key='paragraphs')), ('tfidf', TfidfVectorizer(
-        tokenizer=wordnet, stop_words='english'))
+    ('selector', ItemSelector(key='paragraphs')),
+    ('tfidf', TfidfVectorizer(tokenizer=wordnet,
+                              stop_words='english'))
 ]))
 
 TAGS = ('tags', Pipeline([
-    ('selector', ItemSelector(key='tags')), ('tfidf', TfidfVectorizer(
-        token_pattern=r'(?u)\b\S+\b'))
+    ('selector', ItemSelector(key='tags')),
+    ('tfidf', TfidfVectorizer(token_pattern=r'(?u)\b\S+\b'))
 ]))
 
 BADGES = ('badges', Pipeline([
@@ -60,8 +61,8 @@ class CombinedModel(luigi.Task):
     def readData(self):
         starting_date = self.starting_date
         content_df = readData(starting_date=starting_date)
-        badge_df = pd.read_json(BadgeTimeDf(starting_date=
-                                            starting_date).output().path)
+        badge_df = pd.read_json(BadgeTimeDf(
+            starting_date=starting_date).output().path)
         df = pd.merge(content_df,
                       badge_df,
                       left_on='id',
@@ -135,8 +136,8 @@ class CombinedModelTime(CombinedModel):
     def readData(self):
         starting_date = self.starting_date
         content_df = readTimeDf(starting_date=starting_date)
-        badge_df = pd.read_json(BadgeTimeDf(starting_date=
-                                            starting_date).output().path)
+        path = BadgeTimeDf(starting_date=starting_date).output().path
+        badge_df = pd.read_json(path)
         df = pd.merge(content_df,
                       badge_df[['id', 'badges']],
                       left_on='id',
@@ -146,6 +147,7 @@ class CombinedModelTime(CombinedModel):
         df['badges'] = df['badges'].fillna(value='')
         df = df[~df['ElapsedTime'].isnull()]
         df = df[df['ElapsedTime'] > 0]
+        df = df[df['ElapsedTime'] < 1440]
         return df
 
     def features(self):
@@ -214,7 +216,7 @@ class CombinedModelTime(CombinedModel):
                                    verbose=3,
                                    n_jobs=self.n_jobs,
                                    scoring='mean_absolute_error',
-                                   cv=3)
+                                   cv=2)
         grid_search.fit(df[feature_cols + ['badges']],
                         np.log(df['ElapsedTime']))
 
@@ -244,8 +246,9 @@ def TimeModelEval():
 
         X = df[feature_cols + ['badges']]
         y = df['ElapsedTime']
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.50)
+        X_train, X_test, y_train, y_test = train_test_split(X,
+                                                            y,
+                                                            test_size=0.50)
 
         pipeline.fit(X_train, y_train)
         y_predict = pipeline.predict(X_test)
@@ -268,8 +271,9 @@ def TimeModelEval():
 
         X = df[feature_cols + ['badges']]
         y = df['ElapsedTime']
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.50)
+        X_train, X_test, y_train, y_test = train_test_split(X,
+                                                            y,
+                                                            test_size=0.50)
 
         pipeline.fit(X_train, np.log10(y_train))
         y_predict = map(lambda x: 10**x, pipeline.predict(X_test))
@@ -292,8 +296,9 @@ def TimeModelEval():
 
         X = df[feature_cols + ['badges']]
         y = df['ElapsedTime']
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.50)
+        X_train, X_test, y_train, y_test = train_test_split(X,
+                                                            y,
+                                                            test_size=0.50)
 
         pipeline.fit(X_train, y_train)
         y_predict = pipeline.predict(X_test)
@@ -317,13 +322,15 @@ def TimeModelEval():
 
 
 def main():
-    luigi.build(
-        [
-            CombinedModel(starting_date='2016-02-01',
-                          n_jobs=3),
-        ],
-        local_scheduler=True)
-    TimeModelEval()
+    luigi.build([
+        # CombinedModel(starting_date='2016-02-01',
+        #               n_jobs=3),
+        # CombinedModelTime(starting_date='2016-02-01',
+        #                   n_jobs=3),
+    ],
+                local_scheduler=True)
+    # TimeModelEval()
+    pass
 
 
 if __name__ == '__main__':
